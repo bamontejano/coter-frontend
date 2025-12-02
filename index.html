@@ -23,7 +23,7 @@
         .auth-tab-button.active-therapist { border-bottom: 3px solid var(--secondary-color); background-color: #f7e0e0; color: var(--secondary-color); }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
         .btn-primary { width: 100%; padding: 12px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 16px; margin-top: 10px; }
         .alert { padding: 10px; border-radius: 4px; margin-bottom: 15px; display: none; text-align: center; }
         .alert.error { background-color: #fdd; color: var(--secondary-color); border: 1px solid var(--secondary-color); }
@@ -35,6 +35,27 @@
         .nav-bar { display: flex; background-color: var(--dark-color); padding: 5px 0; margin: 0 -20px; }
         .nav-button { flex-grow: 1; padding: 10px; border: none; background: none; color: white; cursor: pointer; opacity: 0.7; }
         .nav-button.active { opacity: 1; font-weight: bold; border-bottom: 3px solid var(--success-color); }
+        
+        /* Estilos para las Metas */
+        .goal-card {
+            margin-top: 10px; 
+            padding: 15px; 
+            border-radius: 8px; 
+            border-left: 5px solid var(--primary-color); 
+            background-color: #f8fff8;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .status-badge { 
+            float: right; 
+            padding: 5px 10px; 
+            border-radius: 12px; 
+            font-size: 0.8em; 
+            font-weight: bold;
+        }
+        .status-PENDING { background-color: #f1c40f; color: var(--dark-color); }
+        .status-IN_PROGRESS { background-color: #3498db; color: white; }
+        .status-COMPLETED { background-color: var(--success-color); color: white; }
+        .status-ARCHIVED { background-color: var(--dark-color); color: white; }
     </style>
 </head>
 <body>
@@ -115,14 +136,28 @@
                 <button class="nav-button" data-screen="messages" onclick="showScreen('messages')">Mensajes</button>
             </div>
             
-            <div id="dashboardScreen" class="screen active">
+            <div id="dashboardScreen" class="screen active" style="padding: 20px;">
                 <h3>Dashboard</h3>
                 <p>Bienvenido. Aquí verás tu progreso y próximos pasos.</p>
             </div>
-            <div id="checkinScreen" class="screen" style="display: none;"><h3>Check-in Diario</h3><p>Formulario para registrar tu estado de ánimo.</p></div>
-            <div id="goalsScreen" class="screen" style="display: none;"><h3>Mis Metas</h3><p>Lista de metas asignadas por tu terapeuta.</p></div>
-            <div id="assignmentsScreen" class="screen" style="display: none;"><h3>Tareas Pendientes</h3><p>Tareas de lectura o ejercicios.</p></div>
-            <div id="messagesScreen" class="screen" style="display: none;"><h3>Mensajes</h3><p>Comunicación segura con tu terapeuta.</p></div>
+            
+            <div id="checkinScreen" class="screen" style="display: none; padding: 20px;">
+                <h3>📝 Check-in Diario</h3>
+                <div id="checkin-message" class="alert success" style="display: none;"></div>
+                <form id="checkin-form" onsubmit="handleCheckinSubmit(event)">
+                    <div class="form-group"><label for="moodScore">Puntaje de Ánimo (1-5):</label><input type="number" id="moodScore" name="moodScore" min="1" max="5" required></div>
+                    <div class="form-group"><label for="notes">Notas o Reflexiones:</label><textarea id="notes" name="notes" rows="4"></textarea></div>
+                    <button type="submit" class="btn-primary" style="background-color: var(--primary-color);">Guardar Check-in</button>
+                </form>
+            </div>
+
+            <div id="goalsScreen" class="screen" style="display: none; padding: 20px;">
+                <h3>🎯 Mis Metas</h3>
+                <div id="goals-list">Cargando metas...</div>
+            </div>
+            
+            <div id="assignmentsScreen" class="screen" style="display: none; padding: 20px;"><h3>Tareas Pendientes</h3><p>Tareas de lectura o ejercicios.</p></div>
+            <div id="messagesScreen" class="screen" style="display: none; padding: 20px;"><h3>Mensajes</h3><p>Comunicación segura con tu terapeuta.</p></div>
             
         </div>
 
@@ -144,7 +179,7 @@
     // ----------------------------------------------------
     // CONFIGURACIÓN Y FUNCIONES GLOBALES
     // ----------------------------------------------------
-    // 🚨 REVISA ESTO: Debe ser tu URL de Render (sin corchetes)
+    // 🚨 CAMBIA ESTO: Debe ser tu URL de Render (ej: https://coter-backend-xxxxxx.onrender.com/api)
     const API_URL = 'https://coter-backend.onrender.com/api'; 
     
     
@@ -195,19 +230,26 @@
         document.getElementById(`registerForm${role}`).style.display = 'block';
     }
 
-    // Función para navegación entre pantallas internas del paciente
+    /** * Función para navegación entre pantallas internas del paciente.
+     * CRÍTICO: Carga metas cuando se cambia a la vista de goals.
+     */
     function showScreen(screenId) {
-        document.querySelectorAll('.screen').forEach(screen => {
+        document.querySelectorAll('#patientAppInterface .screen').forEach(screen => {
             if(screen.id.endsWith('Screen')) screen.style.display = 'none';
         });
         document.getElementById(screenId + 'Screen').style.display = 'block';
         
         document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
         document.querySelector(`.nav-button[data-screen="${screenId}"]`).classList.add('active');
+
+        if (screenId === 'goals') {
+            loadGoals(); // Llama a la función de carga de metas
+        }
     }
 
+
     // ----------------------------------------------------
-    // LÓGICA DE AUTENTICACIÓN
+    // LÓGICA DE AUTENTICACIÓN (LOGIN/REGISTER)
     // ----------------------------------------------------
     
     async function registerUser(form, role) {
@@ -244,7 +286,6 @@
             
             showAlert('authMessage', 'Registro exitoso. Iniciando sesión...', false);
             
-            // Redirección o cambio de vista
             checkAuthentication();
             
         } catch (error) {
@@ -287,7 +328,6 @@
             localStorage.setItem('userRole', data.user.role);
             localStorage.setItem('userTherapistId', data.user.therapistId || '');
             
-            // Redirección o cambio de vista
             checkAuthentication();
 
         } catch (error) {
@@ -297,8 +337,8 @@
 
     function logoutUser() {
         localStorage.clear();
-        checkAuthentication(); // Esto redirigirá al formulario de login
-        showAlert('authMessage', 'Sesión cerrada con éxito.', false);
+        checkAuthentication(); 
+        // No mostramos mensaje de éxito aquí, checkAuthentication lo manejará.
     }
 
     /**
@@ -316,22 +356,19 @@
 
 
         if (token) {
-            // El usuario está autenticado
             
             if (role === 'PATIENT') {
                 // 1. Es un Paciente: Mostrar su interfaz en este mismo archivo
                 document.getElementById('patientAppInterface').style.display = 'block';
                 
-                // Actualizar el saludo del paciente
                 document.getElementById('patientHeaderGreeting').textContent = `Hola, ${firstName}!`;
-                showScreen('dashboard'); // Mostrar la pantalla de inicio por defecto
+                showScreen('dashboard'); 
 
             } else if (role === 'THERAPIST') {
                 // 2. Es un Terapeuta: Redirigir a la página dedicada
                 window.location.href = 'therapist.html'; 
                 
             } else {
-                 // Rol desconocido o nulo
                  logoutUser();
             }
 
@@ -339,6 +376,99 @@
             // No hay token, mostrar la pantalla de login/registro
             document.getElementById('authScreen').style.display = 'block';
             showAuthRole('PATIENT'); // Mostrar por defecto la pestaña de Paciente
+        }
+    }
+
+    // ----------------------------------------------------
+    // LÓGICA PACIENTE: METAS Y CHECK-IN
+    // ----------------------------------------------------
+
+    function getAuthHeaders() {
+        const token = getToken();
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+    }
+
+    /** Carga y muestra las metas asignadas al paciente. */
+    async function loadGoals() {
+        const list = document.getElementById('goals-list');
+        if (!list) return;
+
+        list.innerHTML = 'Cargando...';
+
+        try {
+            const response = await fetch(`${API_URL}/patient/goals`, {
+                method: 'GET',
+                headers: getAuthHeaders()
+            });
+
+            const goals = await response.json();
+
+            if (!response.ok) {
+                throw new Error(goals.message || 'Error al cargar metas.');
+            }
+
+            if (goals.length === 0) {
+                list.innerHTML = '<p>🎉 ¡Genial! Tu terapeuta aún no te ha asignado metas.</p>';
+                return;
+            }
+
+            const statusClass = (status) => {
+                // Función auxiliar para obtener el color correcto de la clase CSS
+                return `status-badge status-${status}`;
+            };
+            
+            list.innerHTML = goals.map(g => `
+                <div class="goal-card">
+                    <strong>${g.title}</strong>
+                    <span class="${statusClass(g.status)}">${g.status.replace('_', ' ')}</span>
+                    <p>${g.description || 'Sin descripción.'}</p>
+                    <p><small>Fecha Límite: ${new Date(g.dueDate).toLocaleDateString()}</small></p>
+                    ${g.metric ? `<p><small>Métrica: ${g.metric}</small></p>` : ''}
+                    ${g.target ? `<p><small>Objetivo: ${g.target}</small></p>` : ''}
+                </div>
+            `).join('');
+
+        } catch (error) {
+            list.innerHTML = `<p class="alert error" style="display: block;">Error al cargar metas: ${error.message}</p>`;
+        }
+    }
+
+    /** Maneja el envío del formulario de Check-in. */
+    async function handleCheckinSubmit(e) {
+        e.preventDefault();
+        const score = document.getElementById('moodScore').value;
+        const notes = document.getElementById('notes').value;
+        const messageDiv = document.getElementById('checkin-message');
+        messageDiv.style.display = 'none';
+
+        try {
+            if (!score || score < 1 || score > 5) {
+                throw new Error("El puntaje debe ser entre 1 y 5.");
+            }
+            
+            const response = await fetch(`${API_URL}/patient/checkin`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    moodScore: score,
+                    notes: notes
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Error desconocido al registrar check-in.');
+            }
+
+            showAlert('checkin-message', result.message, false);
+            document.getElementById('checkin-form').reset(); // Limpiar formulario
+
+        } catch (error) {
+            showAlert('checkin-message', error.message, true);
         }
     }
     
