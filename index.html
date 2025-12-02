@@ -122,102 +122,169 @@
         </div>
     </div> 
     
-    <script>
-        // ----------------------------------------------------
-        // CONFIGURACIÓN Y FUNCIONES GLOBALES
-        // ----------------------------------------------------
-        // 🚨 CAMBIAR ESTO POR TU DOMINIO DE RENDER 🚨
-        const API_URL = 'https://[TU_DOMINIO_DE_RENDER].onrender.com/api'; 
+<script>
+    // ----------------------------------------------------
+    // CONFIGURACIÓN Y FUNCIONES GLOBALES
+    // ----------------------------------------------------
+    // 🚨 PASO CRÍTICO: REEMPLAZA ESTO CON LA URL DE TU SERVICIO EN RENDER 🚨
+    const API_URL = 'https://[TU_DOMINIO_DE_RENDER].onrender.com/api'; 
+    
+    
+    function getToken() {
+        return localStorage.getItem('token');
+    }
+
+    function showAlert(id, message, isError = false) {
+        const alertElement = document.getElementById(id);
+        if (!alertElement) return; // Seguridad
+        alertElement.textContent = message;
+        alertElement.className = isError ? 'alert error' : 'alert success';
+        alertElement.style.display = 'block';
+        setTimeout(() => {
+            alertElement.style.display = 'none';
+        }, 5000);
+    }
+    
+    // Función auxiliar para obtener el sufijo del rol con la capitalización correcta (FIX)
+    function getRoleSuffix(role) {
+        // Convierte 'PATIENT' a 'Patient' y 'THERAPIST' a 'Therapist'
+        return role.charAt(0) + role.slice(1).toLowerCase();
+    }
+
+
+    // ----------------------------------------------------
+    // LÓGICA DE INTERFAZ DE AUTENTICACIÓN DUAL
+    // ----------------------------------------------------
+
+    function showAuthRole(role) {
+        document.querySelectorAll('.auth-tab-button').forEach(btn => btn.classList.remove('active-patient', 'active-therapist'));
         
-        // Función auxiliar para obtener el sufijo del rol con la capitalización correcta (SOLUCIÓN DEL BUG)
-        function getRoleSuffix(role) {
-            // Convierte 'PATIENT' a 'Patient' y 'THERAPIST' a 'Therapist'
-            return role.charAt(0) + role.slice(1).toLowerCase();
-        }
-
-        function getToken() { /* ... */ }
-        function showAlert(id, message, isError = false) { /* ... */ }
-
-
-        // ----------------------------------------------------
-        // LÓGICA DE INTERFAZ DE AUTENTICACIÓN DUAL
-        // ----------------------------------------------------
-
-        function showAuthRole(role) {
-            document.querySelectorAll('.auth-tab-button').forEach(btn => btn.classList.remove('active-patient', 'active-therapist'));
-            
-            document.getElementById('authContentPATIENT').style.display = (role === 'PATIENT') ? 'block' : 'none';
-            document.getElementById('authContentTHERAPIST').style.display = (role === 'THERAPIST') ? 'block' : 'none';
-            
-            document.getElementById(`tab${role}`).classList.add(`active-${role.toLowerCase()}`);
-            
-            showLogin(role);
-            document.getElementById('authMessage').style.display = 'none';
-        }
-
-        function showLogin(role) {
-            document.getElementById(`loginForm${role}`).style.display = 'block';
-            document.getElementById(`registerForm${role}`).style.display = 'none';
-        }
-
-        function showRegister(role) {
-            document.getElementById(`loginForm${role}`).style.display = 'none';
-            document.getElementById(`registerForm${role}`).style.display = 'block';
-        }
-
-        // ----------------------------------------------------
-        // LÓGICA DE AUTENTICACIÓN (CORREGIDA)
-        // ----------------------------------------------------
+        document.getElementById('authContentPATIENT').style.display = (role === 'PATIENT') ? 'block' : 'none';
+        document.getElementById('authContentTHERAPIST').style.display = (role === 'THERAPIST') ? 'block' : 'none';
         
-        async function registerUser(form, role) {
-            const roleSuffix = getRoleSuffix(role);
-            
-            // Acceso CORREGIDO a los IDs
-            const email = form[`regEmail${roleSuffix}`].value;
-            const password = form[`regPassword${roleSuffix}`].value;
-            const firstName = form[`regFirstName${roleSuffix}`].value;
-
-            // ... (Resto de la función de registro) ...
-        }
+        // Asumiendo IDs de pestañas 'tabPATIENT' y 'tabTHERAPIST'
+        document.getElementById(`tab${role}`).classList.add(`active-${role.toLowerCase()}`);
         
-        async function loginUser(form, expectedRole) {
-            const roleSuffix = getRoleSuffix(expectedRole);
-            
-            // Acceso CORREGIDO a los IDs
-            const email = form[`loginEmail${roleSuffix}`].value;
-            const password = form[`loginPassword${roleSuffix}`].value;
+        showLogin(role);
+        document.getElementById('authMessage').style.display = 'none';
+    }
 
-            // ... (Resto de la función de login) ...
-        }
+    function showLogin(role) {
+        document.getElementById(`loginForm${role}`).style.display = 'block';
+        document.getElementById(`registerForm${role}`).style.display = 'none';
+    }
 
-        function logoutUser() { /* ... */ }
+    function showRegister(role) {
+        document.getElementById(`loginForm${role}`).style.display = 'none';
+        document.getElementById(`registerForm${role}`).style.display = 'block';
+    }
 
-        async function checkAuthentication() {
-            const token = getToken();
-            const role = localStorage.getItem('userRole');
-            
-            // ... (Tu lógica de mostrar/ocultar interfaces, pero con una diferencia)
+    // ----------------------------------------------------
+    // LÓGICA DE AUTENTICACIÓN
+    // ----------------------------------------------------
+    
+    async function registerUser(form, role) {
+        const roleSuffix = getRoleSuffix(role);
+        
+        // Acceso CORREGIDO a los IDs
+        const email = form[`regEmail${roleSuffix}`].value;
+        const password = form[`regPassword${roleSuffix}`].value;
+        const firstName = form[`regFirstName${roleSuffix}`].value;
 
-            if (token) {
-                // ... (Ocultar authScreen) ...
-                
-                if (role === 'PATIENT') {
-                    // Muestra la interfaz del paciente
-                    // ...
-                } else if (role === 'THERAPIST') {
-                    // REDIRECCIONA al Terapeuta a su página
-                    window.location.href = 'therapist.html'; 
-                    return; 
-                }
-            } else {
-                // ... (Muestra authScreen) ...
-                showAuthRole('PATIENT'); 
+        try {
+            // 1. Verificar que el formulario no está vacío
+            if (!email || !password || !firstName) {
+                showAlert('authMessage', 'Todos los campos son obligatorios.', true);
+                return;
             }
-        }
-        
-        // ... (Todas tus funciones de paciente: loadTherapistInfo, saveCheckIn, loadGoals, loadAssignments, etc. van aquí) ...
 
-        window.onload = checkAuthentication;
-    </script>
+            // RUTA: /api/auth/register
+            const response = await fetch(`${API_URL}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, firstName, role }) 
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                // Si la API devuelve un error (ej. 409 Conflict por email duplicado)
+                throw new Error(data.message || 'Error al registrar. Revisa la consola para más detalles.');
+            }
+
+            // Almacenamiento exitoso
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('userId', data.user.id); 
+            localStorage.setItem('userFirstName', data.user.firstName);
+            localStorage.setItem('userRole', data.user.role);
+            localStorage.setItem('userTherapistId', data.user.therapistId || '');
+            
+            checkAuthentication();
+            
+        } catch (error) {
+            showAlert('authMessage', error.message, true);
+        }
+    }
+    
+    async function loginUser(form, expectedRole) {
+        const roleSuffix = getRoleSuffix(expectedRole);
+        
+        // Acceso CORREGIDO a los IDs
+        const email = form[`loginEmail${roleSuffix}`].value;
+        const password = form[`loginPassword${roleSuffix}`].value;
+
+        try {
+            if (!email || !password) {
+                showAlert('authMessage', 'Email y contraseña son obligatorios.', true);
+                return;
+            }
+            
+            // RUTA: /api/auth/login
+            const response = await fetch(`${API_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Credenciales inválidas.');
+            }
+            
+            if (data.user.role !== expectedRole) {
+                throw new Error(`Acceso denegado. Este login es para ${expectedRole}.`);
+            }
+
+            // Almacenamiento exitoso
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('userId', data.user.id); 
+            localStorage.setItem('userFirstName', data.user.firstName || 'Usuario');
+            localStorage.setItem('userRole', data.user.role);
+            localStorage.setItem('userTherapistId', data.user.therapistId || '');
+            
+            checkAuthentication();
+
+        } catch (error) {
+            showAlert('authMessage', error.message, true);
+        }
+    }
+
+    function logoutUser() {
+        localStorage.clear();
+        checkAuthentication();
+        showAlert('authMessage', 'Sesión cerrada con éxito.', false);
+    }
+
+    async function checkAuthentication() {
+        // [ ... Tu lógica de checkAuthentication y redirección ... ]
+        // (Asegúrate de que esta parte esté completa en tu archivo)
+        // ...
+    }
+    
+    // [ ... Todas tus funciones específicas del paciente (loadGoals, saveCheckIn, etc.) ... ]
+
+    window.onload = checkAuthentication;
+</script>
 </body>
 </html>
