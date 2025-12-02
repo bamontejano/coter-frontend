@@ -38,6 +38,42 @@
         .status-IN_PROGRESS { background-color: #3498db; color: white; }
         .status-COMPLETED { background-color: var(--success-color); color: white; }
         .status-ARCHIVED { background-color: var(--dark-color); color: white; }
+
+        /* Estilos del Modal */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe; 
+            margin: 10% auto; 
+            padding: 20px; 
+            border: 1px solid #888; 
+            width: 80%; 
+            max-width: 600px; 
+            border-radius: 8px;
+        }
+        .close-button {
+            color: #aaa; 
+            float: right; 
+            font-size: 28px; 
+            font-weight: bold; 
+            cursor: pointer;
+        }
+        .modal-form input[type="text"], .modal-form input[type="number"], .modal-form input[type="date"], .modal-form textarea {
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
@@ -75,7 +111,7 @@
 
             <section style="margin-top: 20px; position: relative;">
                 <h3>🎯 Metas Asignadas</h3>
-                <button onclick="alert('Implementar Modal de Creación de Metas. Refresca la página para ver las Metas creadas.')" style="position: absolute; top: 15px; right: 0; padding: 8px 15px; background-color: var(--dark-color); color: white; border: none; border-radius: 4px; cursor: pointer;">+ Crear Meta</button>
+                <button id="create-goal-button" style="position: absolute; top: 15px; right: 0; padding: 8px 15px; background-color: var(--dark-color); color: white; border: none; border-radius: 4px; cursor: pointer;">+ Crear Meta</button>
                 <div id="goals-for-patient-list" style="margin-top: 10px;">Cargando metas...</div>
             </section>
         </div>
@@ -83,9 +119,48 @@
     </div>
 </div>
 
+<div id="goal-modal" class="modal">
+    <div class="modal-content">
+        <span onclick="closeModal()" class="close-button">&times;</span>
+        <h2>Crear Nueva Meta</h2>
+        <div id="goal-form-message" style="margin-bottom: 10px;"></div>
+        
+        <form id="create-goal-form" onsubmit="event.preventDefault(); handleCreateGoal(event)" class="modal-form">
+            
+            <div style="margin-bottom: 15px;">
+                <label for="goalTitle" style="display: block; font-weight: bold;">Título:</label>
+                <input type="text" id="goalTitle" required>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label for="goalDescription" style="display: block; font-weight: bold;">Descripción (Opcional):</label>
+                <textarea id="goalDescription" rows="3"></textarea>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label for="goalDueDate" style="display: block; font-weight: bold;">Fecha Límite:</label>
+                <input type="date" id="goalDueDate" required>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label for="goalMetric" style="display: block; font-weight: bold;">Métrica (Ej: veces por semana):</label>
+                <input type="text" id="goalMetric">
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label for="goalTarget" style="display: block; font-weight: bold;">Objetivo (Ej: 3):</label>
+                <input type="number" id="goalTarget">
+            </div>
+            
+            <button type="submit" style="padding: 10px 20px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Guardar Meta</button>
+        </form>
+    </div>
+</div>
+
+
 <script>
     // ⚠️ Reemplaza con la URL base de tu backend de Render (sin el /api)
-    const API_BASE_URL = 'https://coter-backend.onrender.com/api'; 
+    const API_BASE_URL = 'URL_DE_TU_RENDER_BACKEND/api'; 
     let currentPatientId = null; // Almacena el ID del paciente actualmente visualizado
 
     // --- FUNCIONES DE AUTENTICACIÓN ---
@@ -121,9 +196,23 @@
     
     function showAlert(id, message, isError = false) {
         const alertElement = document.getElementById(id);
+        
+        // Si el elemento no existe (ej: estamos en el modal), lo creamos temporalmente
+        if (!alertElement) return;
+
         alertElement.textContent = message;
-        alertElement.className = isError ? 'alert error' : 'alert success';
         alertElement.style.display = 'block';
+        alertElement.style.padding = '10px';
+        alertElement.style.borderRadius = '4px';
+
+        if (isError) {
+            alertElement.style.backgroundColor = '#fdd';
+            alertElement.style.color = 'var(--primary-color)';
+        } else {
+            alertElement.style.backgroundColor = '#dfd';
+            alertElement.style.color = 'var(--success-color)';
+        }
+
         setTimeout(() => {
             alertElement.style.display = 'none';
         }, 5000);
@@ -134,6 +223,7 @@
     async function loadPatients() {
         const list = document.getElementById('patients-list');
         list.innerHTML = 'Cargando...';
+        showPatientListView(); // Asegura que la vista de lista esté visible
 
         try {
             const response = await fetch(`${API_BASE_URL}/therapist/patients`, {
@@ -187,20 +277,38 @@
 
             showAlert('assign-message', result.message, false);
             form.reset();
-            loadPatients(); // Recargar la lista para mostrar el nuevo paciente
+            loadPatients(); 
 
         } catch (error) {
             showAlert('assign-message', error.message, true);
         }
     }
 
-    // --- LÓGICA DE VISUALIZACIÓN DE DETALLES DEL PACIENTE ---
+    // --- LÓGICA DE VISTAS Y MODAL ---
 
     /** Muestra la lista de pacientes y oculta los detalles. */
     function showPatientListView() {
         document.getElementById('patients-list-view').style.display = 'block';
         document.getElementById('patient-details-view').style.display = 'none';
-        loadPatients(); // Opcional: recargar la lista
+        currentPatientId = null; 
+    }
+
+    /** Abre el modal de creación de meta */
+    function openCreateGoalModal(patientId) {
+        if (!patientId) {
+            alert("Error: ID de paciente no definido.");
+            return;
+        }
+        currentPatientId = patientId; // Usamos la variable global
+        document.getElementById('goal-modal').style.display = 'block';
+        document.getElementById('create-goal-form').reset(); 
+        document.getElementById('goal-form-message').style.display = 'none';
+    }
+
+    /** Cierra el modal */
+    function closeModal() {
+        document.getElementById('goal-modal').style.display = 'none';
+        // currentPatientId se mantiene porque el usuario puede querer seguir viendo detalles.
     }
 
     /** Obtiene y muestra los detalles completos del paciente (Check-ins y Metas). */
@@ -211,16 +319,18 @@
         const nameHeader = document.getElementById('patient-detail-name');
         const checkinsList = document.getElementById('checkins-list');
         const goalsList = document.getElementById('goals-for-patient-list');
+        const createGoalButton = document.getElementById('create-goal-button');
 
         nameHeader.textContent = 'Cargando...';
         checkinsList.innerHTML = 'Cargando check-ins...';
         goalsList.innerHTML = 'Cargando metas...';
         
-        // Almacenar el ID del paciente actual para otras acciones (como crear meta)
-        window.currentPatientId = patientId; 
+        currentPatientId = patientId; 
+        
+        // ⚠️ Conectamos el botón de crear meta a la función del modal
+        createGoalButton.setAttribute('onclick', `openCreateGoalModal('${patientId}')`);
 
         try {
-            // RUTA: /api/therapist/patient/:patientId
             const response = await fetch(`${API_BASE_URL}/therapist/patient/${patientId}`, {
                 method: 'GET',
                 headers: getAuthHeaders()
@@ -250,7 +360,6 @@
 
             // 3. Mostrar Metas
             if (patient.assignedGoals && patient.assignedGoals.length > 0) {
-                // Función auxiliar para obtener la clase CSS del estado
                 const statusClass = (status) => `status-badge status-${status}`;
 
                 goalsList.innerHTML = patient.assignedGoals.map(g => `
@@ -260,7 +369,7 @@
                         <p>${g.description || 'Sin descripción.'}</p>
                         <p><small>Límite: ${new Date(g.dueDate).toLocaleDateString()}</small></p>
                         <p><small>Métrica/Objetivo: ${g.metric || 'N/A'} / ${g.target || 'N/A'}</small></p>
-                        <button onclick="alert('Implementar edición de meta ${g.id}. Usa window.currentPatientId para crear una nueva.')" style="margin-top: 10px; padding: 5px 10px; background-color: var(--secondary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Editar</button>
+                        <button onclick="alert('Funcionalidad de edición PENDIENTE para la meta ${g.id}')" style="margin-top: 10px; padding: 5px 10px; background-color: var(--secondary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Editar</button>
                     </div>
                 `).join('');
             } else {
@@ -270,6 +379,58 @@
         } catch (error) {
             document.getElementById('patient-details-view').innerHTML = `<p style="color: var(--primary-color);">Error: ${error.message}. Por favor, vuelve a la lista.</p>
                 <button onclick="showPatientListView()" style="margin-top: 15px; padding: 8px 15px; background-color: var(--secondary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">← Volver a la Lista</button>`;
+        }
+    }
+
+    /** Maneja el envío del formulario de Creación de Meta */
+    async function handleCreateGoal(event) {
+        event.preventDefault();
+        
+        if (!currentPatientId) {
+            showAlert('goal-form-message', 'Error interno: ID del paciente no encontrado.', true);
+            return;
+        }
+
+        const title = document.getElementById('goalTitle').value;
+        const description = document.getElementById('goalDescription').value;
+        const dueDate = document.getElementById('goalDueDate').value;
+        const metric = document.getElementById('goalMetric').value;
+        const target = document.getElementById('goalTarget').value;
+        
+        if (!title || !dueDate) {
+            showAlert('goal-form-message', 'El Título y la Fecha Límite son obligatorios.', true);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/therapist/goals`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    patientId: currentPatientId,
+                    title: title,
+                    description: description,
+                    dueDate: dueDate,
+                    metric: metric,
+                    target: target 
+                })
+            });
+
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.message || 'Error al crear la meta.');
+            }
+
+            showAlert('goal-form-message', 'Meta creada exitosamente!', false);
+            
+            setTimeout(() => {
+                closeModal(); // Cerrar modal al éxito después de un breve tiempo
+                viewPatientDetails(currentPatientId); // Recargar los detalles para mostrar la nueva meta
+            }, 1000); 
+
+        } catch (error) {
+            showAlert('goal-form-message', error.message, true);
         }
     }
 
