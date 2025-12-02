@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coter - Interfaz Terapeuta</title>
+    <style>
+        :root {
+            --primary-color: #e74c3c; /* Rojo Terapeuta */
+            --secondary-color: #c0392b; 
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+            /* ... Otros estilos (mantener consistencia) ... */
+        }
+        /* [ ... Estilos CSS adaptados para terapeuta (header, nav-bar, etc.) ... ] */
+        .app-container { max-width: 800px; margin: 40px auto; background-color: white; border-radius: 12px; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); overflow: hidden; min-height: 600px; }
+        .header { background-color: var(--primary-color); }
+        .nav-bar { background-color: var(--dark-color); }
+        .patient-card { background-color: var(--light-color); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--primary-color); }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <div id="therapistAppInterface">
+            <div class="header">
+                <h1>Coter Terapeuta</h1>
+                <button class="logout-button" onclick="logoutUser()">Salir</button>
+            </div>
+            
+            <div class="nav-bar">
+                <button class="nav-button active" data-screen="tdashboard" onclick="showTherapistScreen('tdashboard')">Dashboard</button>
+                <button class="nav-button" data-screen="patients" onclick="showTherapistScreen('patients')">Mis Pacientes</button>
+                <button class="nav-button" data-screen="tgoals" onclick="showTherapistScreen('tgoals')">Metas</button>
+                <button class="nav-button" data-screen="tmessages" onclick="showTherapistScreen('tmessages')">Mensajes</button>
+            </div>
+
+            <div id="tdashboardScreen" class="screen active">
+                <h2>Bienvenido, <span id="therapistNameDisplay">Terapeuta</span></h2>
+                <div id="quickStats">
+                    <h3>Resumen Rápido</h3>
+                    <p>Pacientes Activos: <strong id="activePatientsCount">0</strong></p>
+                    <p>Check-ins Pendientes Hoy: <strong id="pendingCheckinsCount">0</strong></p>
+                </div>
+            </div>
+            
+            <div id="patientsScreen" class="screen">
+                <h2>Mis Pacientes</h2>
+                <div id="patientsList">
+                    <p>Cargando lista de pacientes...</p>
+                </div>
+                <div id="patientsMessage" class="alert"></div>
+            </div>
+            
+            <div id="tgoalsScreen" class="screen">
+                <h2>Gestión de Metas</h2>
+                <p>Aquí se añadirán las herramientas para asignar y revisar metas.</p>
+            </div>
+            
+            <div id="tmessagesScreen" class="screen">
+                <h2>Mensajería</h2>
+                <p>Aquí se gestionará la mensajería con todos los pacientes.</p>
+            </div>
+            
+        </div>
+    </div>
+    
+    <script>
+        // ----------------------------------------------------
+        // CONFIGURACIÓN Y LÓGICA
+        // ----------------------------------------------------
+        // 🚨 CAMBIAR ESTO POR TU DOMINIO DE RENDER 🚨
+        const API_URL = 'https://[TU_DOMINIO_DE_RENDER].onrender.com/api'; 
+        
+        function getToken() {
+            return localStorage.getItem('token');
+        }
+
+        function showAlert(id, message, isError = false) { /* ... */ } // Incluye tu función showAlert
+
+        function logoutUser() {
+            localStorage.clear();
+            // Redirige al index (página de autenticación)
+            window.location.href = 'index.html'; 
+        }
+
+        function checkAuthentication() {
+            const token = getToken();
+            const role = localStorage.getItem('userRole');
+
+            if (!token || role !== 'THERAPIST') {
+                alert('Acceso no autorizado. Redirigiendo a la página de inicio.');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            document.getElementById('therapistNameDisplay').textContent = localStorage.getItem('userFirstName');
+            showTherapistScreen('tdashboard');
+        }
+
+        function showTherapistScreen(screenId) {
+            // Lógica de navegación del terapeuta
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId + 'Screen').classList.add('active');
+
+            document.querySelectorAll('.nav-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-screen="${screenId}"]`).classList.add('active');
+            
+            if (screenId === 'patients') {
+                loadPatients();
+            }
+        }
+
+        async function loadPatients() {
+            const token = getToken();
+            const list = document.getElementById('patientsList');
+            list.innerHTML = '<p>Cargando pacientes...</p>';
+
+            try {
+                // RUTA: /api/therapist/patients
+                const response = await fetch(`${API_URL}/therapist/patients`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const patients = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(patients.message || 'Error al cargar pacientes.');
+                }
+                
+                if (patients.length === 0) {
+                    list.innerHTML = '<p>Aún no tienes pacientes asignados.</p>';
+                    return;
+                }
+
+                list.innerHTML = patients.map(p => `
+                    <div class="patient-card">
+                        <strong>${p.firstName || 'Sin Nombre'} (ID: ${p.id.substring(0, 8)})</strong>
+                        <p>Email: ${p.email}</p>
+                        <small>Último Check-in: [PENDIENTE]</small>
+                        <button onclick="viewPatientDetails('${p.id}')" style="margin-top: 10px; padding: 5px 10px; background-color: var(--dark-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Ver Detalles</button>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                list.innerHTML = `<p style="color: var(--primary-color);">Error al cargar pacientes: ${error.message}</p>`;
+            }
+        }
+        
+        function viewPatientDetails(patientId) {
+            alert(`Función para ver los detalles y check-ins del paciente ${patientId} (PENDIENTE)`);
+            // Aquí se implementará la lógica para cargar check-ins, metas, etc.
+        }
+
+        window.onload = checkAuthentication;
+    </script>
+</body>
+</html>
