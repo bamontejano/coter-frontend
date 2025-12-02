@@ -10,122 +10,103 @@
             --secondary-color: #c0392b; 
             --dark-color: #2c3e50;
             --light-color: #ecf0f1;
-            /* ... Otros estilos (mantener consistencia) ... */
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --font-family: 'Arial', sans-serif;
         }
-        /* [ ... Estilos CSS adaptados para terapeuta (header, nav-bar, etc.) ... ] */
+        body { margin: 0; padding: 0; background-color: #f4f4f4; font-family: var(--font-family); }
+        .header { background-color: var(--primary-color); color: white; padding: 20px; text-align: center; }
+        .nav-bar { background-color: var(--dark-color); padding: 10px 0; display: flex; justify-content: flex-end; }
+        .nav-bar a, .nav-bar button { color: white; text-decoration: none; padding: 8px 15px; margin-right: 15px; background: none; border: none; cursor: pointer; font-size: 16px; }
         .app-container { max-width: 800px; margin: 40px auto; background-color: white; border-radius: 12px; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); overflow: hidden; min-height: 600px; }
-        .header { background-color: var(--primary-color); }
-        .nav-bar { background-color: var(--dark-color); }
-        .patient-card { background-color: var(--light-color); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--primary-color); }
+        .content-area { padding: 20px; }
+        .patient-card { background-color: var(--light-color); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--primary-color); display: flex; justify-content: space-between; align-items: center; }
+        .patient-card button { padding: 5px 10px; background-color: var(--dark-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        h2 { color: var(--dark-color); border-bottom: 2px solid var(--light-color); padding-bottom: 10px; margin-bottom: 20px; }
+        #assignPatientForm { display: flex; gap: 10px; align-items: center; }
+        #patientEmailInput { flex-grow: 1; padding: 10px; border: 1px solid var(--light-color); border-radius: 4px; }
+        #assignButton { padding: 10px 15px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="app-container">
-        
-        <div id="therapistAppInterface">
-            <div class="header">
-                <h1>Coter Terapeuta</h1>
-                <button class="logout-button" onclick="logoutUser()">Salir</button>
-            </div>
-            
-            <div class="nav-bar">
-                <button class="nav-button active" data-screen="tdashboard" onclick="showTherapistScreen('tdashboard')">Dashboard</button>
-                <button class="nav-button" data-screen="patients" onclick="showTherapistScreen('patients')">Mis Pacientes</button>
-                <button class="nav-button" data-screen="tgoals" onclick="showTherapistScreen('tgoals')">Metas</button>
-                <button class="nav-button" data-screen="tmessages" onclick="showTherapistScreen('tmessages')">Mensajes</button>
-            </div>
-
-            <div id="tdashboardScreen" class="screen active">
-                <h2>Bienvenido, <span id="therapistNameDisplay">Terapeuta</span></h2>
-                <div id="quickStats">
-                    <h3>Resumen Rápido</h3>
-                    <p>Pacientes Activos: <strong id="activePatientsCount">0</strong></p>
-                    <p>Check-ins Pendientes Hoy: <strong id="pendingCheckinsCount">0</strong></p>
-                </div>
-            </div>
-            
-            <div id="patientsScreen" class="screen">
-                <h2>Mis Pacientes</h2>
-                <div id="patientsList">
-                    <p>Cargando lista de pacientes...</p>
-                </div>
-                <div id="patientsMessage" class="alert"></div>
-            </div>
-            
-            <div id="tgoalsScreen" class="screen">
-                <h2>Gestión de Metas</h2>
-                <p>Aquí se añadirán las herramientas para asignar y revisar metas.</p>
-            </div>
-            
-            <div id="tmessagesScreen" class="screen">
-                <h2>Mensajería</h2>
-                <p>Aquí se gestionará la mensajería con todos los pacientes.</p>
-            </div>
-            
-        </div>
+    <div class="header">
+        <h1>Dashboard del Terapeuta</h1>
     </div>
     
+    <div class="nav-bar">
+        <a href="#home">Inicio</a>
+        <button onclick="logout()">Cerrar Sesión</button>
+    </div>
+
+    <div class="app-container">
+        <div class="content-area">
+            
+            <section id="assignment-form">
+                <h2>Asignar Nuevo Paciente</h2>
+                <form id="assignPatientForm">
+                    <input 
+                        type="email" 
+                        id="patientEmailInput" 
+                        placeholder="Email del paciente (debe estar registrado)" 
+                        required
+                    >
+                    <button 
+                        type="submit" 
+                        id="assignButton"
+                    >
+                        Asignar
+                    </button>
+                </form>
+                <p id="assignment-message" style="margin-top: 15px; font-weight: bold;"></p>
+            </section>
+
+            <hr style="border: 0; height: 1px; background-color: var(--light-color); margin: 20px 0;">
+            
+            <section>
+                <h2>Mis Pacientes</h2>
+                <div id="patientsList">
+                    <p>Cargando pacientes...</p>
+                </div>
+            </section>
+
+        </div>
+    </div>
+
     <script>
-        // ----------------------------------------------------
-        // CONFIGURACIÓN Y LÓGICA
-        // ----------------------------------------------------
-        // 🚨 CAMBIAR ESTO POR TU DOMINIO DE RENDER 🚨
+        // ⚠️ CRÍTICO: Asegúrate de que esta URL coincida con la de tu servicio en Render.
         const API_URL = 'https://coter-backend.onrender.com/api'; 
         
-        function getToken() {
-            return localStorage.getItem('token');
+        // Función para cerrar sesión
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = 'index.html';
         }
 
-        function showAlert(id, message, isError = false) { /* ... */ } // Incluye tu función showAlert
-
-        function logoutUser() {
-            localStorage.clear();
-            // Redirige al index (página de autenticación)
-            window.location.href = 'index.html'; 
-        }
-
+        // Función para verificar la autenticación
         function checkAuthentication() {
-            const token = getToken();
-            const role = localStorage.getItem('userRole');
-
-            if (!token || role !== 'THERAPIST') {
-                alert('Acceso no autorizado. Redirigiendo a la página de inicio.');
+            const token = localStorage.getItem('token');
+            if (!token) {
                 window.location.href = 'index.html';
                 return;
             }
-            
-            document.getElementById('therapistNameDisplay').textContent = localStorage.getItem('userFirstName');
-            showTherapistScreen('tdashboard');
+            // Si el token existe, cargamos la lista de pacientes
+            loadTherapistPatients(); 
         }
 
-        function showTherapistScreen(screenId) {
-            // Lógica de navegación del terapeuta
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.remove('active');
-            });
-            document.getElementById(screenId + 'Screen').classList.add('active');
-
-            document.querySelectorAll('.nav-button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.querySelector(`[data-screen="${screenId}"]`).classList.add('active');
-            
-            if (screenId === 'patients') {
-                loadPatients();
-            }
-        }
-
-        async function loadPatients() {
-            const token = getToken();
+        // Función para cargar la lista de pacientes
+        async function loadTherapistPatients() {
             const list = document.getElementById('patientsList');
+            const token = localStorage.getItem('token');
             list.innerHTML = '<p>Cargando pacientes...</p>';
 
             try {
-                // RUTA: /api/therapist/patients
                 const response = await fetch(`${API_URL}/therapist/patients`, {
                     method: 'GET',
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
 
                 const patients = await response.json();
@@ -139,26 +120,89 @@
                     return;
                 }
 
+                // Mostrar la lista de pacientes
                 list.innerHTML = patients.map(p => `
                     <div class="patient-card">
-                        <strong>${p.firstName || 'Sin Nombre'} (ID: ${p.id.substring(0, 8)})</strong>
-                        <p>Email: ${p.email}</p>
-                        <small>Último Check-in: [PENDIENTE]</small>
-                        <button onclick="viewPatientDetails('${p.id}')" style="margin-top: 10px; padding: 5px 10px; background-color: var(--dark-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Ver Detalles</button>
+                        <div>
+                            <strong>${p.firstName || 'Sin Nombre'} (ID: ${p.id.substring(0, 8)}...)</strong>
+                            <p>Email: ${p.email}</p>
+                            <small>Último Check-in: [PENDIENTE]</small>
+                        </div>
+                        <button onclick="viewPatientDetails('${p.id}')">Ver Detalles</button>
                     </div>
                 `).join('');
 
             } catch (error) {
-                list.innerHTML = `<p style="color: var(--primary-color);">Error al cargar pacientes: ${error.message}</p>`;
+                list.innerHTML = `<p style="color: var(--error-color);">❌ Error al cargar pacientes: ${error.message}</p>`;
             }
         }
         
+        // 🚀 NUEVA FUNCIÓN: Asignar un paciente
+        async function assignNewPatient(event) {
+            event.preventDefault(); 
+            
+            const email = document.getElementById('patientEmailInput').value.trim();
+            const messageElement = document.getElementById('assignment-message');
+            const assignButton = document.getElementById('assignButton');
+            const token = localStorage.getItem('token');
+
+            if (!email) {
+                messageElement.textContent = '❌ Por favor, ingrese un email válido.';
+                messageElement.style.color = 'var(--error-color)';
+                return;
+            }
+
+            messageElement.textContent = 'Asignando paciente...';
+            messageElement.style.color = 'orange';
+            assignButton.disabled = true;
+
+            try {
+                const response = await fetch(`${API_URL}/therapist/assign`, {
+                    method: 'PATCH', 
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ patientEmail: email })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Error desconocido al asignar paciente.');
+                }
+
+                // Éxito:
+                messageElement.textContent = `✅ ${data.message}`; 
+                messageElement.style.color = 'var(--success-color)';
+                document.getElementById('patientEmailInput').value = ''; // Limpiar input
+
+                // CRÍTICO: Recargar la lista de pacientes inmediatamente
+                loadTherapistPatients(); 
+
+            } catch (error) {
+                messageElement.textContent = `❌ Falló la asignación: ${error.message}`;
+                messageElement.style.color = 'var(--error-color)';
+            } finally {
+                assignButton.disabled = false;
+            }
+        }
+
         function viewPatientDetails(patientId) {
             alert(`Función para ver los detalles y check-ins del paciente ${patientId} (PENDIENTE)`);
             // Aquí se implementará la lógica para cargar check-ins, metas, etc.
         }
 
-        window.onload = checkAuthentication;
+        // Ejecutar funciones al cargar la página
+        window.onload = function() {
+            checkAuthentication();
+            
+            // Asignar el listener al formulario de asignación
+            const assignForm = document.getElementById('assignPatientForm');
+            if (assignForm) {
+                assignForm.addEventListener('submit', assignNewPatient);
+            }
+        };
     </script>
 </body>
 </html>
