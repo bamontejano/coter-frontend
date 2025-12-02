@@ -10,398 +10,270 @@
             --secondary-color: #c0392b; 
             --dark-color: #2c3e50;
             --light-color: #ecf0f1;
-            --success-color: #27ae60;
-            --error-color: #e74c3c;
-            --font-family: 'Arial', sans-serif;
+            --success-color: #2ecc71;
+            --text-color: #333;
         }
-        body { margin: 0; padding: 0; background-color: #f4f4f4; font-family: var(--font-family); }
-        .header { background-color: var(--primary-color); color: white; padding: 20px; text-align: center; }
-        .nav-bar { background-color: var(--dark-color); padding: 10px 0; display: flex; justify-content: flex-end; }
-        .nav-bar a, .nav-bar button { color: white; text-decoration: none; padding: 8px 15px; margin-right: 15px; background: none; border: none; cursor: pointer; font-size: 16px; }
-        .app-container { max-width: 800px; margin: 40px auto; background-color: white; border-radius: 12px; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); overflow: hidden; min-height: 600px; }
-        .content-area { padding: 20px; }
-        .patient-card { background-color: var(--light-color); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--primary-color); display: flex; justify-content: space-between; align-items: center; }
-        .patient-card button { padding: 5px 10px; background-color: var(--dark-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
-        h2 { color: var(--dark-color); border-bottom: 2px solid var(--light-color); padding-bottom: 10px; margin-bottom: 20px; }
+        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; background-color: var(--light-color); color: var(--text-color); }
+        .app-container { max-width: 900px; margin: 40px auto; background-color: white; border-radius: 12px; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); overflow: hidden; min-height: 600px; }
+        .header { background-color: var(--primary-color); color: white; padding: 20px; text-align: center; display: flex; justify-content: space-between; align-items: center; }
+        .content { padding: 20px; }
+        .patient-card { background-color: #fceeee; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--primary-color); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .patient-card button { background-color: var(--dark-color); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
+        .patient-card button:hover { background-color: #34495e; }
+        h2 { border-bottom: 2px solid var(--primary-color); padding-bottom: 5px; margin-top: 20px; color: var(--secondary-color); }
+        .logout-button { background: none; border: 1px solid white; color: white; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        
+        /* Estilos de la Vista de Detalle */
+        #patient-details-view { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-top: 20px; }
+        #patient-details-view h3 { border-bottom: 1px solid #eee; padding-bottom: 5px; color: var(--dark-color); }
+        
+        /* Estilos para Check-ins */
+        .checkin-card { background-color: #f7f7f7; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid var(--success-color); }
+        .checkin-card .score { font-weight: bold; color: var(--success-color); margin-right: 10px; }
 
-        /* Estilos específicos de Dashboard / Detalles */
-        #assignment-header { display: flex; justify-content: space-between; align-items: center; }
-        #assignPatientForm { display: flex; gap: 10px; align-items: center; padding: 15px 0; border-top: 1px dashed var(--light-color); margin-top: 10px; }
-        #patientEmailInput { flex-grow: 1; padding: 10px; border: 1px solid var(--light-color); border-radius: 4px; }
-        #assignButton { padding: 10px 15px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
-        #assignFormContent {
-            display: none; 
-            padding: 10px 0;
-            margin-bottom: 20px;
-            border: 1px solid var(--light-color);
-            border-radius: 8px;
-            padding: 20px;
-        }
-
-        /* Estilos de Metas */
-        #createGoalForm input[type="text"], #createGoalForm textarea, #createGoalForm input[type="date"] {
-            width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid var(--light-color); border-radius: 4px; box-sizing: border-box;
-        }
-        .goal-card { background: #f9f9f9; padding: 15px; border-radius: 4px; margin-bottom: 10px; border-left: 4px solid var(--success-color); }
-        .goal-card strong { display: block; margin-bottom: 5px; }
-        .goal-status-PENDING { color: orange; font-weight: bold; }
-        .goal-status-COMPLETED { color: var(--success-color); font-weight: bold; }
+        /* Estilos para Metas */
+        .goal-card-therapist { background-color: #fff9f9; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #3498db; /* Azul */ }
+        .status-badge { display: inline-block; padding: 5px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; margin-left: 10px; }
+        .status-PENDING { background-color: #f1c40f; color: var(--dark-color); }
+        .status-IN_PROGRESS { background-color: #3498db; color: white; }
+        .status-COMPLETED { background-color: var(--success-color); color: white; }
+        .status-ARCHIVED { background-color: var(--dark-color); color: white; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>Dashboard del Terapeuta</h1>
-    </div>
-    
-    <div class="nav-bar">
-        <a href="#home">Inicio</a>
-        <button onclick="logout()">Cerrar Sesión</button>
-    </div>
+<div class="app-container">
+    <header class="header">
+        <h1>Coter - Interfaz Terapeuta</h1>
+        <button class="logout-button" onclick="logout()">Cerrar Sesión</button>
+    </header>
 
-    <div class="app-container">
-        <div class="content-area">
-            
-            <div id="mainDashboardView">
-                <section>
-                    <div id="assignment-header">
-                        <h2>Mis Pacientes</h2>
-                        <button 
-                            id="toggleAssignButton"
-                            onclick="toggleAssignmentForm()" 
-                            style="padding: 8px 15px; background-color: var(--dark-color); color: white; border: none; border-radius: 4px; cursor: pointer;"
-                        >
-                            Asignar Nuevo
-                        </button>
-                    </div>
-                    
-                    <div id="patientsList">
-                        <p>Cargando pacientes...</p>
-                    </div>
-                </section>
+    <div class="content">
 
-                <hr style="border: 0; height: 1px; background-color: var(--light-color); margin: 20px 0;">
-                
-                <section id="assignment-form-section">
-                    <div id="assignFormContent">
-                        <h3>Ingresar Email del Paciente</h3>
-                        <form id="assignPatientForm">
-                            <input 
-                                type="email" 
-                                id="patientEmailInput" 
-                                placeholder="Email del paciente (debe estar registrado)" 
-                                required
-                            >
-                            <button 
-                                type="submit" 
-                                id="assignButton"
-                            >
-                                Asignar
-                            </button>
-                        </form>
-                        <p id="assignment-message" style="margin-top: 15px; font-weight: bold;"></p>
-                    </div>
-                </section>
-            </div>
+        <section style="margin-bottom: 30px;">
+            <h2>👤 Asignar Nuevo Paciente</h2>
+            <div id="assign-message" style="margin-bottom: 10px;"></div>
+            <form id="assign-form" onsubmit="event.preventDefault(); assignPatient(event.target)">
+                <input type="email" id="patientEmail" placeholder="Email del Paciente" required style="width: 70%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <button type="submit" style="width: 25%; padding: 10px; background-color: var(--secondary-color); color: white; border: none; border-radius: 4px; float: right;">Asignar</button>
+            </form>
+        </section>
 
-            <div id="patientDetailView" style="display: none;">
-                <button onclick="showMainDashboard()" style="margin-bottom: 20px; padding: 10px; background-color: var(--secondary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
-                    ← Volver al Dashboard
-                </button>
-                
-                <h2 id="patientDetailName">Detalles del Paciente</h2>
-                
-                <section id="goalCreationSection" style="margin-top: 30px; padding: 20px; border: 1px solid var(--light-color); border-radius: 8px;">
-                    <h3>Crear Nueva Meta</h3>
-                    <form id="createGoalForm">
-                        <input type="hidden" id="goalPatientId" required>
-                        <input type="text" id="goalTitle" placeholder="Título de la Meta (ej: Escribir 5 afirmaciones)" required>
-                        <textarea id="goalDescription" placeholder="Descripción detallada (Opcional)"></textarea>
-                        <label for="goalDueDate" style="display: block; margin-bottom: 5px;">Fecha Límite:</label>
-                        <input type="date" id="goalDueDate" required>
-                        <button type="submit" id="createGoalButton" style="margin-top: 10px; padding: 10px 15px; background-color: var(--success-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
-                            Crear Meta
-                        </button>
-                    </form>
-                    <p id="goal-message" style="margin-top: 15px; font-weight: bold;"></p>
-                </section>
-
-                <section id="patientGoalsList" style="margin-top: 30px;">
-                    <h3>Metas Asignadas</h3>
-                    <div id="goalsContainer">Cargando metas...</div>
-                </section>
-                
-                <section id="patientCheckins" style="margin-top: 30px;">
-                    <h3>Historial de Check-ins</h3>
-                    <div id="checkinsContainer">Funcionalidad de Check-ins Pendiente...</div>
-                </section>
-
-            </div>
-
+        <div id="patients-list-view">
+            <h2>📋 Mis Pacientes Asignados</h2>
+            <div id="patients-list">Cargando pacientes...</div>
         </div>
+
+        <div id="patient-details-view" style="display: none;">
+            <button onclick="showPatientListView()" style="margin-bottom: 15px; padding: 8px 15px; background-color: var(--secondary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">← Volver a la Lista</button>
+            <h2 id="patient-detail-name">Detalles del Paciente</h2>
+
+            <section>
+                <h3>📈 Check-ins Recientes</h3>
+                <div id="checkins-list">No hay check-ins recientes.</div>
+            </section>
+
+            <section style="margin-top: 20px; position: relative;">
+                <h3>🎯 Metas Asignadas</h3>
+                <button onclick="alert('Implementar Modal de Creación de Metas. Refresca la página para ver las Metas creadas.')" style="position: absolute; top: 15px; right: 0; padding: 8px 15px; background-color: var(--dark-color); color: white; border: none; border-radius: 4px; cursor: pointer;">+ Crear Meta</button>
+                <div id="goals-for-patient-list" style="margin-top: 10px;">Cargando metas...</div>
+            </section>
+        </div>
+
     </div>
+</div>
 
-    <script>
-        // ⚠️ CRÍTICO: Asegúrate de que esta URL coincida con la de tu servicio en Render.
-        const API_URL = 'https://coter-backend.onrender.com/api'; 
+<script>
+    // ⚠️ Reemplaza con la URL base de tu backend de Render (sin el /api)
+    const API_BASE_URL = 'https://coter-backend.onrender.com/api'; 
+    let currentPatientId = null; // Almacena el ID del paciente actualmente visualizado
+
+    // --- FUNCIONES DE AUTENTICACIÓN ---
+
+    function getToken() {
+        return localStorage.getItem('token');
+    }
+    
+    function checkAuthentication() {
+        const token = getToken();
+        const role = localStorage.getItem('userRole');
         
-        function logout() {
-            localStorage.removeItem('token');
+        if (!token || role !== 'THERAPIST') {
+            alert('Acceso no autorizado. Serás redirigido al login.');
             window.location.href = 'index.html';
-        }
-
-        function checkAuthentication() {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.href = 'index.html';
-                return;
-            }
-            loadTherapistPatients(); 
-        }
-
-        // ----------------------------------------------------
-        // GESTIÓN DE VISTAS
-        // ----------------------------------------------------
-
-        function showMainDashboard() {
-            document.getElementById('mainDashboardView').style.display = 'block';
-            document.getElementById('patientDetailView').style.display = 'none';
+            return;
         }
         
-        function toggleAssignmentForm() {
-            const content = document.getElementById('assignFormContent');
-            const button = document.getElementById('toggleAssignButton');
-            const isHidden = content.style.display === 'none' || content.style.display === '';
-            
-            content.style.display = isHidden ? 'block' : 'none';
-            button.textContent = isHidden ? 'Ocultar Formulario' : 'Asignar Nuevo';
-            
-            // Limpiar el mensaje después de alternar
-            document.getElementById('assignment-message').textContent = '';
-        }
+        loadPatients();
+    }
 
+    function logout() {
+        localStorage.clear();
+        window.location.href = 'index.html';
+    }
 
-        // ----------------------------------------------------
-        // LÓGICA DEL DASHBOARD PRINCIPAL
-        // ----------------------------------------------------
-
-        async function loadTherapistPatients() {
-            const list = document.getElementById('patientsList');
-            const token = localStorage.getItem('token');
-            list.innerHTML = '<p>Cargando pacientes...</p>';
-
-            try {
-                const response = await fetch(`${API_URL}/therapist/patients`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const patients = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(patients.message || 'Error al cargar pacientes.');
-                }
-                
-                if (patients.length === 0) {
-                    list.innerHTML = '<p>Aún no tienes pacientes asignados.</p>';
-                    return;
-                }
-
-                list.innerHTML = patients.map(p => `
-                    <div class="patient-card">
-                        <div>
-                            <strong>${p.firstName || 'Sin Nombre'} ${p.lastName || ''} (ID: ${p.id.substring(0, 8)}...)</strong>
-                            <p>Email: ${p.email}</p>
-                            <small>Último Check-in: [PENDIENTE]</small>
-                        </div>
-                        <button onclick="viewPatientDetails('${p.id}', '${p.firstName || 'Paciente'}')" >Ver Detalles</button>
-                    </div>
-                `).join('');
-
-            } catch (error) {
-                list.innerHTML = `<p style="color: var(--error-color);">❌ Error al cargar pacientes: ${error.message}</p>`;
-            }
-        }
-        
-        async function assignNewPatient(event) {
-            event.preventDefault(); 
-            // ... (Lógica de asignación idéntica a la versión anterior) ...
-            const email = document.getElementById('patientEmailInput').value.trim();
-            const messageElement = document.getElementById('assignment-message');
-            const assignButton = document.getElementById('assignButton');
-            const token = localStorage.getItem('token');
-
-            if (!email) {
-                messageElement.textContent = '❌ Por favor, ingrese un email válido.';
-                messageElement.style.color = 'var(--error-color)';
-                return;
-            }
-
-            messageElement.textContent = 'Asignando paciente...';
-            messageElement.style.color = 'orange';
-            assignButton.disabled = true;
-
-            try {
-                const response = await fetch(`${API_URL}/therapist/assign`, {
-                    method: 'PATCH', 
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}` 
-                    },
-                    body: JSON.stringify({ patientEmail: email })
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.message || 'Error desconocido al asignar paciente.');
-                }
-
-                messageElement.textContent = `✅ ${data.message}`; 
-                messageElement.style.color = 'var(--success-color)';
-                document.getElementById('patientEmailInput').value = ''; 
-
-                loadTherapistPatients(); 
-
-            } catch (error) {
-                messageElement.textContent = `❌ Falló la asignación: ${error.message}`;
-                messageElement.style.color = 'var(--error-color)';
-            } finally {
-                assignButton.disabled = false;
-            }
-        }
-
-        // ----------------------------------------------------
-        // VISTA DE DETALLES Y GESTIÓN DE METAS
-        // ----------------------------------------------------
-
-        async function viewPatientDetails(patientId, patientName) {
-            // 1. Alternar vistas
-            document.getElementById('mainDashboardView').style.display = 'none';
-            document.getElementById('patientDetailView').style.display = 'block';
-            
-            // 2. Establecer IDs y Nombres
-            document.getElementById('goalPatientId').value = patientId;
-            document.getElementById('patientDetailName').textContent = `Detalles de ${patientName}`;
-            
-            // 3. Cargar datos específicos
-            loadPatientGoals(patientId);
-            // loadPatientCheckins(patientId); // PENDIENTE DE IMPLEMENTAR
-        }
-
-        async function loadPatientGoals(patientId) {
-            const goalsContainer = document.getElementById('goalsContainer');
-            const token = localStorage.getItem('token');
-            goalsContainer.innerHTML = '<p>Cargando metas...</p>';
-
-            try {
-                const response = await fetch(`${API_URL}/therapist/goals/${patientId}`, {
-                    method: 'GET',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                const goals = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(goals.message || 'Error al cargar metas.');
-                }
-
-                if (goals.length === 0) {
-                    goalsContainer.innerHTML = '<p>No hay metas asignadas a este paciente.</p>';
-                    return;
-                }
-
-                goalsContainer.innerHTML = goals.map(g => `
-                    <div class="goal-card" style="border-left-color: ${g.status === 'COMPLETED' ? 'var(--success-color)' : g.status === 'PENDING' ? 'orange' : 'var(--dark-color)'};">
-                        <strong>${g.title}</strong>
-                        <p>${g.description || 'Sin descripción.'}</p>
-                        <small>Estado: <span class="goal-status-${g.status}">${g.status}</span> | Vencimiento: ${new Date(g.dueDate).toLocaleDateString()}</small>
-                    </div>
-                `).join('');
-
-            } catch (error) {
-                goalsContainer.innerHTML = `<p style="color: var(--error-color);">❌ Error al cargar metas: ${error.message}</p>`;
-            }
-        }
-
-
-        async function createNewGoal(event) {
-            event.preventDefault();
-
-            const patientId = document.getElementById('goalPatientId').value;
-            const title = document.getElementById('goalTitle').value.trim();
-            const description = document.getElementById('goalDescription').value.trim();
-            const dueDate = document.getElementById('goalDueDate').value;
-            const messageElement = document.getElementById('goal-message');
-            const createGoalButton = document.getElementById('createGoalButton');
-            const token = localStorage.getItem('token');
-
-            if (!title || !dueDate) {
-                messageElement.textContent = '❌ Título y fecha límite son obligatorios.';
-                messageElement.style.color = 'var(--error-color)';
-                return;
-            }
-
-            messageElement.textContent = 'Creando meta...';
-            messageElement.style.color = 'orange';
-            createGoalButton.disabled = true;
-
-
-            try {
-                const response = await fetch(`${API_URL}/therapist/goals`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ patientId, title, description, dueDate })
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.message || 'Error desconocido al crear meta.');
-                }
-
-                messageElement.textContent = `✅ Meta "${data.goal.title}" creada exitosamente.`;
-                messageElement.style.color = 'var(--success-color)';
-                
-                document.getElementById('createGoalForm').reset();
-                
-                loadPatientGoals(patientId); 
-
-            } catch (error) {
-                messageElement.textContent = `❌ Falló la creación de meta: ${error.message}`;
-                messageElement.style.color = 'var(--error-color)';
-            } finally {
-                createGoalButton.disabled = false;
-            }
-        }
-
-        // ----------------------------------------------------
-        // INICIALIZACIÓN
-        // ----------------------------------------------------
-        window.onload = function() {
-            // Aseguramos que la vista principal es visible al cargar
-            document.getElementById('mainDashboardView').style.display = 'block';
-            document.getElementById('patientDetailView').style.display = 'none';
-
-            checkAuthentication();
-            
-            // Asignar listeners
-            const assignForm = document.getElementById('assignPatientForm');
-            if (assignForm) {
-                assignForm.addEventListener('submit', assignNewPatient);
-            }
-            
-            const goalForm = document.getElementById('createGoalForm');
-            if (goalForm) {
-                goalForm.addEventListener('submit', createNewGoal);
-            }
+    function getAuthHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getToken()}`
         };
-    </script>
+    }
+    
+    function showAlert(id, message, isError = false) {
+        const alertElement = document.getElementById(id);
+        alertElement.textContent = message;
+        alertElement.className = isError ? 'alert error' : 'alert success';
+        alertElement.style.display = 'block';
+        setTimeout(() => {
+            alertElement.style.display = 'none';
+        }, 5000);
+    }
+
+    // --- LÓGICA DE PACIENTES Y ASIGNACIÓN ---
+
+    async function loadPatients() {
+        const list = document.getElementById('patients-list');
+        list.innerHTML = 'Cargando...';
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/therapist/patients`, {
+                method: 'GET',
+                headers: getAuthHeaders()
+            });
+
+            const patients = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(patients.message || 'Error al cargar pacientes.');
+            }
+            
+            if (patients.length === 0) {
+                list.innerHTML = '<p>Aún no tienes pacientes asignados.</p>';
+                return;
+            }
+
+            list.innerHTML = patients.map(p => `
+                <div class="patient-card">
+                    <div>
+                        <strong>${p.firstName || 'Sin Nombre'} ${p.lastName || ''}</strong>
+                        <p>Email: ${p.email}</p>
+                    </div>
+                    <button onclick="viewPatientDetails('${p.id}')">Ver Detalles</button>
+                </div>
+            `).join('');
+
+        } catch (error) {
+            list.innerHTML = `<p style="color: var(--primary-color);">Error al cargar pacientes: ${error.message}</p>`;
+        }
+    }
+
+    async function assignPatient(form) {
+        const email = document.getElementById('patientEmail').value;
+        const messageDiv = document.getElementById('assign-message');
+        messageDiv.innerHTML = '';
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/therapist/assign`, {
+                method: 'PATCH',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ patientEmail: email })
+            });
+
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.message || 'Error al asignar paciente.');
+            }
+
+            showAlert('assign-message', result.message, false);
+            form.reset();
+            loadPatients(); // Recargar la lista para mostrar el nuevo paciente
+
+        } catch (error) {
+            showAlert('assign-message', error.message, true);
+        }
+    }
+
+    // --- LÓGICA DE VISUALIZACIÓN DE DETALLES DEL PACIENTE ---
+
+    /** Muestra la lista de pacientes y oculta los detalles. */
+    function showPatientListView() {
+        document.getElementById('patients-list-view').style.display = 'block';
+        document.getElementById('patient-details-view').style.display = 'none';
+        loadPatients(); // Opcional: recargar la lista
+    }
+
+    /** Obtiene y muestra los detalles completos del paciente (Check-ins y Metas). */
+    async function viewPatientDetails(patientId) {
+        document.getElementById('patients-list-view').style.display = 'none';
+        document.getElementById('patient-details-view').style.display = 'block';
+
+        const nameHeader = document.getElementById('patient-detail-name');
+        const checkinsList = document.getElementById('checkins-list');
+        const goalsList = document.getElementById('goals-for-patient-list');
+
+        nameHeader.textContent = 'Cargando...';
+        checkinsList.innerHTML = 'Cargando check-ins...';
+        goalsList.innerHTML = 'Cargando metas...';
+        
+        // Almacenar el ID del paciente actual para otras acciones (como crear meta)
+        window.currentPatientId = patientId; 
+
+        try {
+            // RUTA: /api/therapist/patient/:patientId
+            const response = await fetch(`${API_BASE_URL}/therapist/patient/${patientId}`, {
+                method: 'GET',
+                headers: getAuthHeaders()
+            });
+
+            const patient = await response.json();
+
+            if (!response.ok) {
+                throw new Error(patient.message || 'Error al obtener detalles del paciente.');
+            }
+
+            // 1. Mostrar nombre
+            nameHeader.textContent = `${patient.firstName} ${patient.lastName || ''} (${patient.email})`;
+
+            // 2. Mostrar Check-ins
+            if (patient.checkins && patient.checkins.length > 0) {
+                checkinsList.innerHTML = patient.checkins.map(c => `
+                    <div class="checkin-card">
+                        <span class="score">Ánimo: ${c.moodScore}/5</span>
+                        <small>(${new Date(c.date).toLocaleDateString()} ${new Date(c.date).toLocaleTimeString()})</small>
+                        <p>Notas: ${c.notes || 'N/A'}</p>
+                    </div>
+                `).join('');
+            } else {
+                checkinsList.innerHTML = '<p>El paciente aún no ha registrado check-ins.</p>';
+            }
+
+            // 3. Mostrar Metas
+            if (patient.assignedGoals && patient.assignedGoals.length > 0) {
+                // Función auxiliar para obtener la clase CSS del estado
+                const statusClass = (status) => `status-badge status-${status}`;
+
+                goalsList.innerHTML = patient.assignedGoals.map(g => `
+                    <div class="goal-card-therapist">
+                        <strong>${g.title}</strong>
+                        <span class="${statusClass(g.status)}" style="float: right;">${g.status.replace('_', ' ')}</span>
+                        <p>${g.description || 'Sin descripción.'}</p>
+                        <p><small>Límite: ${new Date(g.dueDate).toLocaleDateString()}</small></p>
+                        <p><small>Métrica/Objetivo: ${g.metric || 'N/A'} / ${g.target || 'N/A'}</small></p>
+                        <button onclick="alert('Implementar edición de meta ${g.id}. Usa window.currentPatientId para crear una nueva.')" style="margin-top: 10px; padding: 5px 10px; background-color: var(--secondary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Editar</button>
+                    </div>
+                `).join('');
+            } else {
+                goalsList.innerHTML = '<p>Aún no hay metas asignadas a este paciente.</p>';
+            }
+
+        } catch (error) {
+            document.getElementById('patient-details-view').innerHTML = `<p style="color: var(--primary-color);">Error: ${error.message}. Por favor, vuelve a la lista.</p>
+                <button onclick="showPatientListView()" style="margin-top: 15px; padding: 8px 15px; background-color: var(--secondary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">← Volver a la Lista</button>`;
+        }
+    }
+
+    window.onload = checkAuthentication;
+</script>
 </body>
 </html>
