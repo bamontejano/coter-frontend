@@ -23,9 +23,22 @@
         .patient-card { background-color: var(--light-color); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--primary-color); display: flex; justify-content: space-between; align-items: center; }
         .patient-card button { padding: 5px 10px; background-color: var(--dark-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
         h2 { color: var(--dark-color); border-bottom: 2px solid var(--light-color); padding-bottom: 10px; margin-bottom: 20px; }
-        #assignPatientForm { display: flex; gap: 10px; align-items: center; }
+
+        /* Estilos específicos del formulario */
+        #assignment-header { display: flex; justify-content: space-between; align-items: center; }
+        #assignPatientForm { display: flex; gap: 10px; align-items: center; padding: 15px 0; border-top: 1px dashed var(--light-color); margin-top: 10px; }
         #patientEmailInput { flex-grow: 1; padding: 10px; border: 1px solid var(--light-color); border-radius: 4px; }
         #assignButton { padding: 10px 15px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
+
+        /* ⚠️ CRÍTICO: Ocultar el contenido del formulario por defecto */
+        #assignFormContent {
+            display: none; 
+            padding: 10px 0;
+            margin-bottom: 20px;
+            border: 1px solid var(--light-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
@@ -42,31 +55,42 @@
     <div class="app-container">
         <div class="content-area">
             
-            <section id="assignment-form">
-                <h2>Asignar Nuevo Paciente</h2>
-                <form id="assignPatientForm">
-                    <input 
-                        type="email" 
-                        id="patientEmailInput" 
-                        placeholder="Email del paciente (debe estar registrado)" 
-                        required
-                    >
+            <section>
+                <div id="assignment-header">
+                    <h2>Mis Pacientes</h2>
                     <button 
-                        type="submit" 
-                        id="assignButton"
+                        onclick="toggleAssignmentForm()" 
+                        style="padding: 8px 15px; background-color: var(--dark-color); color: white; border: none; border-radius: 4px; cursor: pointer;"
                     >
-                        Asignar
+                        Asignar Nuevo
                     </button>
-                </form>
-                <p id="assignment-message" style="margin-top: 15px; font-weight: bold;"></p>
+                </div>
+                
+                <div id="patientsList">
+                    <p>Cargando pacientes...</p>
+                </div>
             </section>
 
             <hr style="border: 0; height: 1px; background-color: var(--light-color); margin: 20px 0;">
             
-            <section>
-                <h2>Mis Pacientes</h2>
-                <div id="patientsList">
-                    <p>Cargando pacientes...</p>
+            <section id="assignment-form-section">
+                <div id="assignFormContent">
+                    <h3>Ingresar Email del Paciente</h3>
+                    <form id="assignPatientForm">
+                        <input 
+                            type="email" 
+                            id="patientEmailInput" 
+                            placeholder="Email del paciente (debe estar registrado)" 
+                            required
+                        >
+                        <button 
+                            type="submit" 
+                            id="assignButton"
+                        >
+                            Asignar
+                        </button>
+                    </form>
+                    <p id="assignment-message" style="margin-top: 15px; font-weight: bold;"></p>
                 </div>
             </section>
 
@@ -77,24 +101,28 @@
         // ⚠️ CRÍTICO: Asegúrate de que esta URL coincida con la de tu servicio en Render.
         const API_URL = 'https://coter-backend.onrender.com/api'; 
         
-        // Función para cerrar sesión
         function logout() {
             localStorage.removeItem('token');
             window.location.href = 'index.html';
         }
 
-        // Función para verificar la autenticación
         function checkAuthentication() {
             const token = localStorage.getItem('token');
             if (!token) {
                 window.location.href = 'index.html';
                 return;
             }
-            // Si el token existe, cargamos la lista de pacientes
             loadTherapistPatients(); 
         }
 
-        // Función para cargar la lista de pacientes
+        // 💡 NUEVA FUNCIÓN: Muestra u oculta el formulario de asignación
+        function toggleAssignmentForm() {
+            const content = document.getElementById('assignFormContent');
+            const isHidden = content.style.display === 'none' || content.style.display === '';
+            content.style.display = isHidden ? 'block' : 'none';
+        }
+
+
         async function loadTherapistPatients() {
             const list = document.getElementById('patientsList');
             const token = localStorage.getItem('token');
@@ -124,7 +152,7 @@
                 list.innerHTML = patients.map(p => `
                     <div class="patient-card">
                         <div>
-                            <strong>${p.firstName || 'Sin Nombre'} (ID: ${p.id.substring(0, 8)}...)</strong>
+                            <strong>${p.firstName || 'Sin Nombre'} ${p.lastName || ''} (ID: ${p.id.substring(0, 8)}...)</strong>
                             <p>Email: ${p.email}</p>
                             <small>Último Check-in: [PENDIENTE]</small>
                         </div>
@@ -137,7 +165,6 @@
             }
         }
         
-        // 🚀 NUEVA FUNCIÓN: Asignar un paciente
         async function assignNewPatient(event) {
             event.preventDefault(); 
             
@@ -179,6 +206,9 @@
 
                 // CRÍTICO: Recargar la lista de pacientes inmediatamente
                 loadTherapistPatients(); 
+                
+                // Opcional: Ocultar el formulario después de la asignación exitosa
+                // toggleAssignmentForm(); 
 
             } catch (error) {
                 messageElement.textContent = `❌ Falló la asignación: ${error.message}`;
@@ -190,7 +220,6 @@
 
         function viewPatientDetails(patientId) {
             alert(`Función para ver los detalles y check-ins del paciente ${patientId} (PENDIENTE)`);
-            // Aquí se implementará la lógica para cargar check-ins, metas, etc.
         }
 
         // Ejecutar funciones al cargar la página
