@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coter - Plataforma Terapéutica</title>
     <style>
-        /* [ ... Estilos CSS (omitidos para brevedad) ... ] */
+        /* Estilos CSS simplificados para la estructura */
         :root {
             --primary-color: #3498db; /* Azul Paciente */
             --secondary-color: #e74c3c; /* Rojo Terapeuta */
@@ -13,13 +13,28 @@
             --warning-color: #f39c12;
             --dark-color: #2c3e50;
             --light-color: #ecf0f1;
+            --text-color: #333;
         }
-        /* ... Asegúrate de mantener todos tus estilos anteriores ... */
-        .app-container { max-width: 450px; margin: 40px auto; background-color: white; border-radius: 12px; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); overflow: hidden; min-height: 600px; }
-        .auth-tab-button.active-patient { border-bottom: 3px solid var(--primary-color); background-color: #e0eaf3; }
-        .auth-tab-button.active-therapist { border-bottom: 3px solid var(--secondary-color); background-color: #f7e0e0; }
-        #loginFormPatient, #registerFormPatient { border-left: 5px solid var(--primary-color); padding: 10px; margin-top: 15px; }
-        #loginFormTherapist, #registerFormTherapist { border-left: 5px solid var(--secondary-color); padding: 10px; margin-top: 15px; }
+        body { font-family: sans-serif; margin: 0; background-color: var(--light-color); color: var(--text-color); }
+        .app-container { max-width: 450px; margin: 40px auto; background-color: white; border-radius: 12px; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); overflow: hidden; min-height: 600px; padding: 20px; }
+        .auth-tabs { display: flex; margin-bottom: 20px; }
+        .auth-tab-button { flex-grow: 1; padding: 10px; border: none; background-color: #f7f7f7; cursor: pointer; font-weight: bold; }
+        .auth-tab-button.active-patient { border-bottom: 3px solid var(--primary-color); background-color: #e0eaf3; color: var(--primary-color); }
+        .auth-tab-button.active-therapist { border-bottom: 3px solid var(--secondary-color); background-color: #f7e0e0; color: var(--secondary-color); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .btn-primary { width: 100%; padding: 12px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        .alert { padding: 10px; border-radius: 4px; margin-bottom: 15px; display: none; text-align: center; }
+        .alert.error { background-color: #fdd; color: var(--secondary-color); border: 1px solid var(--secondary-color); }
+        .alert.success { background-color: #dfd; color: var(--success-color); border: 1px solid var(--success-color); }
+        
+        /* Estilos de la Interfaz del Paciente */
+        .header { padding: 15px 20px; color: white; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; margin: -20px -20px 0 -20px; }
+        .logout-button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .nav-bar { display: flex; background-color: var(--dark-color); padding: 5px 0; margin: 0 -20px; }
+        .nav-button { flex-grow: 1; padding: 10px; border: none; background: none; color: white; cursor: pointer; opacity: 0.7; }
+        .nav-button.active { opacity: 1; font-weight: bold; border-bottom: 3px solid var(--success-color); }
     </style>
 </head>
 <body>
@@ -88,7 +103,7 @@
         
         <div id="patientAppInterface" style="display: none;">
             <div class="header" style="background-color: var(--primary-color);">
-                <h1>Coter Paciente</h1>
+                <h1 id="patientHeaderGreeting">Coter Paciente</h1>
                 <button class="logout-button" onclick="logoutUser()">Salir</button>
             </div>
             
@@ -100,33 +115,36 @@
                 <button class="nav-button" data-screen="messages" onclick="showScreen('messages')">Mensajes</button>
             </div>
             
-            <div id="dashboardScreen" class="screen active">... Dashboard Content ...</div>
-            <div id="checkinScreen" class="screen">... Checkin Form ...</div>
-            <div id="goalsScreen" class="screen">... Goals List ...</div>
-            <div id="assignmentsScreen" class="screen">... Assignments List ...</div>
-            <div id="messagesScreen" class="screen">... Messages Content ...</div>
+            <div id="dashboardScreen" class="screen active">
+                <h3>Dashboard</h3>
+                <p>Bienvenido. Aquí verás tu progreso y próximos pasos.</p>
+            </div>
+            <div id="checkinScreen" class="screen" style="display: none;"><h3>Check-in Diario</h3><p>Formulario para registrar tu estado de ánimo.</p></div>
+            <div id="goalsScreen" class="screen" style="display: none;"><h3>Mis Metas</h3><p>Lista de metas asignadas por tu terapeuta.</p></div>
+            <div id="assignmentsScreen" class="screen" style="display: none;"><h3>Tareas Pendientes</h3><p>Tareas de lectura o ejercicios.</p></div>
+            <div id="messagesScreen" class="screen" style="display: none;"><h3>Mensajes</h3><p>Comunicación segura con tu terapeuta.</p></div>
             
         </div>
 
-
         <div id="therapistAppInterface" style="display: none;">
              <div class="header" style="background-color: var(--secondary-color);">
-                <h1>Coter Terapeuta</h1>
+                <h1>Coter Terapeuta (Redirección)</h1>
                 <button class="logout-button" onclick="logoutUser()">Salir</button>
             </div>
-            <div class="screen active">
-                 <h2>Redirección</h2>
-                 <p>Por favor, usa la URL específica para la interfaz de terapeuta (Ej: [GitHub Pages URL]/therapist.html).</p>
-                 <a href="therapist.html" class="btn-primary" style="display: block; margin-top: 20px;">Ir a Interfaz de Terapeuta</a>
+            <div class="screen active" style="padding: 20px;">
+                <h2>Interfaz de Terapeuta</h2>
+                <p>El rol de Terapeuta debe ser manejado en su propia página para una mejor gestión de la aplicación.</p>
+                <p>Serás redirigido automáticamente a:</p>
+                <a href="therapist.html" class="btn-primary" style="background-color: var(--secondary-color);">therapist.html</a>
             </div>
         </div>
-    </div> 
+    </div>
     
 <script>
     // ----------------------------------------------------
     // CONFIGURACIÓN Y FUNCIONES GLOBALES
     // ----------------------------------------------------
-    // 🚨 PASO CRÍTICO: REEMPLAZA ESTO CON LA URL DE TU SERVICIO EN RENDER 🚨
+    // 🚨 REVISA ESTO: Debe ser tu URL de Render (sin corchetes)
     const API_URL = 'https://coter-backend.onrender.com/api'; 
     
     
@@ -136,7 +154,7 @@
 
     function showAlert(id, message, isError = false) {
         const alertElement = document.getElementById(id);
-        if (!alertElement) return; // Seguridad
+        if (!alertElement) return;
         alertElement.textContent = message;
         alertElement.className = isError ? 'alert error' : 'alert success';
         alertElement.style.display = 'block';
@@ -145,7 +163,6 @@
         }, 5000);
     }
     
-    // Función auxiliar para obtener el sufijo del rol con la capitalización correcta (FIX)
     function getRoleSuffix(role) {
         // Convierte 'PATIENT' a 'Patient' y 'THERAPIST' a 'Therapist'
         return role.charAt(0) + role.slice(1).toLowerCase();
@@ -162,7 +179,6 @@
         document.getElementById('authContentPATIENT').style.display = (role === 'PATIENT') ? 'block' : 'none';
         document.getElementById('authContentTHERAPIST').style.display = (role === 'THERAPIST') ? 'block' : 'none';
         
-        // Asumiendo IDs de pestañas 'tabPATIENT' y 'tabTHERAPIST'
         document.getElementById(`tab${role}`).classList.add(`active-${role.toLowerCase()}`);
         
         showLogin(role);
@@ -179,6 +195,17 @@
         document.getElementById(`registerForm${role}`).style.display = 'block';
     }
 
+    // Función para navegación entre pantallas internas del paciente
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(screen => {
+            if(screen.id.endsWith('Screen')) screen.style.display = 'none';
+        });
+        document.getElementById(screenId + 'Screen').style.display = 'block';
+        
+        document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`.nav-button[data-screen="${screenId}"]`).classList.add('active');
+    }
+
     // ----------------------------------------------------
     // LÓGICA DE AUTENTICACIÓN
     // ----------------------------------------------------
@@ -186,19 +213,16 @@
     async function registerUser(form, role) {
         const roleSuffix = getRoleSuffix(role);
         
-        // Acceso CORREGIDO a los IDs
         const email = form[`regEmail${roleSuffix}`].value;
         const password = form[`regPassword${roleSuffix}`].value;
         const firstName = form[`regFirstName${roleSuffix}`].value;
 
         try {
-            // 1. Verificar que el formulario no está vacío
             if (!email || !password || !firstName) {
                 showAlert('authMessage', 'Todos los campos son obligatorios.', true);
                 return;
             }
 
-            // RUTA: /api/auth/register
             const response = await fetch(`${API_URL}/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -208,8 +232,7 @@
             const data = await response.json();
 
             if (!response.ok) {
-                // Si la API devuelve un error (ej. 409 Conflict por email duplicado)
-                throw new Error(data.message || 'Error al registrar. Revisa la consola para más detalles.');
+                throw new Error(data.message || 'Error al registrar. Credenciales o email duplicado.');
             }
 
             // Almacenamiento exitoso
@@ -219,6 +242,9 @@
             localStorage.setItem('userRole', data.user.role);
             localStorage.setItem('userTherapistId', data.user.therapistId || '');
             
+            showAlert('authMessage', 'Registro exitoso. Iniciando sesión...', false);
+            
+            // Redirección o cambio de vista
             checkAuthentication();
             
         } catch (error) {
@@ -229,7 +255,6 @@
     async function loginUser(form, expectedRole) {
         const roleSuffix = getRoleSuffix(expectedRole);
         
-        // Acceso CORREGIDO a los IDs
         const email = form[`loginEmail${roleSuffix}`].value;
         const password = form[`loginPassword${roleSuffix}`].value;
 
@@ -239,7 +264,6 @@
                 return;
             }
             
-            // RUTA: /api/auth/login
             const response = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -263,6 +287,7 @@
             localStorage.setItem('userRole', data.user.role);
             localStorage.setItem('userTherapistId', data.user.therapistId || '');
             
+            // Redirección o cambio de vista
             checkAuthentication();
 
         } catch (error) {
@@ -272,18 +297,52 @@
 
     function logoutUser() {
         localStorage.clear();
-        checkAuthentication();
+        checkAuthentication(); // Esto redirigirá al formulario de login
         showAlert('authMessage', 'Sesión cerrada con éxito.', false);
     }
 
+    /**
+     * Función CRÍTICA: Verifica el token y el rol para mostrar la interfaz correcta.
+     */
     async function checkAuthentication() {
-        // [ ... Tu lógica de checkAuthentication y redirección ... ]
-        // (Asegúrate de que esta parte esté completa en tu archivo)
-        // ...
+        const token = getToken();
+        const role = localStorage.getItem('userRole');
+        const firstName = localStorage.getItem('userFirstName') || 'Usuario';
+        
+        // Ocultar todas las interfaces por defecto
+        document.getElementById('authScreen').style.display = 'none';
+        document.getElementById('patientAppInterface').style.display = 'none';
+        document.getElementById('therapistAppInterface').style.display = 'none';
+
+
+        if (token) {
+            // El usuario está autenticado
+            
+            if (role === 'PATIENT') {
+                // 1. Es un Paciente: Mostrar su interfaz en este mismo archivo
+                document.getElementById('patientAppInterface').style.display = 'block';
+                
+                // Actualizar el saludo del paciente
+                document.getElementById('patientHeaderGreeting').textContent = `Hola, ${firstName}!`;
+                showScreen('dashboard'); // Mostrar la pantalla de inicio por defecto
+
+            } else if (role === 'THERAPIST') {
+                // 2. Es un Terapeuta: Redirigir a la página dedicada
+                window.location.href = 'therapist.html'; 
+                
+            } else {
+                 // Rol desconocido o nulo
+                 logoutUser();
+            }
+
+        } else {
+            // No hay token, mostrar la pantalla de login/registro
+            document.getElementById('authScreen').style.display = 'block';
+            showAuthRole('PATIENT'); // Mostrar por defecto la pestaña de Paciente
+        }
     }
     
-    // [ ... Todas tus funciones específicas del paciente (loadGoals, saveCheckIn, etc.) ... ]
-
+    // Al cargar la página, se comprueba si el usuario ya está autenticado
     window.onload = checkAuthentication;
 </script>
 </body>
