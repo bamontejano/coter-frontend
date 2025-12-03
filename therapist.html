@@ -67,7 +67,7 @@
             font-weight: bold; 
             cursor: pointer;
         }
-        .modal-form input[type="text"], .modal-form input[type="number"], .modal-form input[type="date"], .modal-form textarea {
+        .modal-form input[type="text"], .modal-form input[type="number"], .modal-form input[type="date"], .modal-form textarea, .modal-form select {
             width: 100%; 
             padding: 8px; 
             border: 1px solid #ccc; 
@@ -122,7 +122,7 @@
 <div id="goal-modal" class="modal">
     <div class="modal-content">
         <span onclick="closeModal()" class="close-button">&times;</span>
-        <h2>Crear Nueva Meta</h2>
+        <h2 id="modal-title">Crear Nueva Meta</h2>
         <div id="goal-form-message" style="margin-bottom: 10px;"></div>
         
         <form id="create-goal-form" onsubmit="event.preventDefault(); handleCreateGoal(event)" class="modal-form">
@@ -151,6 +151,16 @@
                 <label for="goalTarget" style="display: block; font-weight: bold;">Objetivo (Ej: 3):</label>
                 <input type="number" id="goalTarget">
             </div>
+
+            <div id="status-field" style="margin-bottom: 15px; display: none;"> 
+                <label for="goalStatus" style="display: block; font-weight: bold;">Estado de la Meta:</label>
+                <select id="goalStatus">
+                    <option value="PENDING">PENDIENTE</option>
+                    <option value="IN_PROGRESS">EN PROGRESO</option>
+                    <option value="COMPLETED">COMPLETADA</option>
+                    <option value="ARCHIVED">ARCHIVADA</option>
+                </select>
+            </div>
             
             <button type="submit" style="padding: 10px 20px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Guardar Meta</button>
         </form>
@@ -159,16 +169,63 @@
 
 
 <script>
-    // ⚠️ Reemplaza con la URL base de tu backend de Render (sin el /api)
+    // ⚠️ REEMPLAZA ESTA URL CON LA DIRECCIÓN REAL DE TU BACKEND DE RENDER
     const API_BASE_URL = 'https://coter-backend.onrender.com/api'; 
-    let currentPatientId = null; // Almacena el ID del paciente actualmente visualizado
+    let currentPatientId = null; // ID del paciente actualmente visualizado
+    let currentGoalId = null;    // ID de la meta que se está editando (null si es creación)
 
-    // --- FUNCIONES DE AUTENTICACIÓN ---
+    // --- Funciones de Utilidad y Auth ---
 
     function getToken() {
         return localStorage.getItem('token');
     }
     
+    function getAuthHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getToken()}`
+        };
+    }
+    
+    function showAlert(id, message, isError = false) {
+        const alertElement = document.getElementById(id);
+        if (!alertElement) return;
+
+        alertElement.textContent = message;
+        alertElement.style.display = 'block';
+        alertElement.style.padding = '10px';
+        alertElement.style.borderRadius = '4px';
+
+        if (isError) {
+            alertElement.style.backgroundColor = '#fdd';
+            alertElement.style.color = 'var(--primary-color)';
+        } else {
+            alertElement.style.backgroundColor = '#dfd';
+            alertElement.style.color = 'var(--success-color)';
+        }
+
+        setTimeout(() => {
+            alertElement.style.display = 'none';
+        }, 8000);
+    }
+
+    /**
+     * Maneja respuestas con error (no-JSON) y las formatea para un mensaje de error legible.
+     */
+    async function handleResponseError(response) {
+        let errorDetail = `Error ${response.status} (${response.statusText}): El servidor no respondió con JSON válido.`;
+        
+        try {
+            const errorJson = await response.json();
+            errorDetail = errorJson.message || 'Error del servidor sin mensaje específico.';
+        } catch (e) {
+            const errorText = await response.text();
+            errorDetail = errorText.substring(0, 200);
+        }
+        
+        throw new Error(`¡FALLO EN LA CONEXIÓN! Status ${response.status}. Detalle: ${errorDetail}`);
+    }
+
     function checkAuthentication() {
         const token = getToken();
         const role = localStorage.getItem('userRole');
@@ -187,43 +244,59 @@
         window.location.href = 'index.html';
     }
 
-    function getAuthHeaders() {
-        return {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${getToken()}`
-        };
+    function showPatientListView() {
+        document.getElementById('patients-list-view').style.display = 'block';
+        document.getElementById('patient-details-view').style.display = 'none';
+        currentPatientId = null; 
     }
-    
-    function showAlert(id, message, isError = false) {
-        const alertElement = document.getElementById(id);
+
+    // --- LÓGICA DEL MODAL ---
+
+    /** Abre el modal para CREAR una meta */
+    function openCreateGoalModal(patientId) {
+        if (!patientId) return alert("Error: ID de paciente no definido.");
+        currentPatientId = patientId;
+        currentGoalId = null; // Modo Creación
         
-        // Si el elemento no existe (ej: estamos en el modal), lo creamos temporalmente
-        if (!alertElement) return;
-
-        alertElement.textContent = message;
-        alertElement.style.display = 'block';
-        alertElement.style.padding = '10px';
-        alertElement.style.borderRadius = '4px';
-
-        if (isError) {
-            alertElement.style.backgroundColor = '#fdd';
-            alertElement.style.color = 'var(--primary-color)';
-        } else {
-            alertElement.style.backgroundColor = '#dfd';
-            alertElement.style.color = 'var(--success-color)';
-        }
-
-        setTimeout(() => {
-            alertElement.style.display = 'none';
-        }, 5000);
+        document.getElementById('modal-title').textContent = 'Crear Nueva Meta';
+        document.getElementById('status-field').style.display = 'none'; // Ocultar estado
+        
+        document.getElementById('create-goal-form').reset();
+        document.getElementById('goal-modal').style.display = 'block';
+        document.getElementById('goal-form-message').style.display = 'none';
     }
 
-    // --- LÓGICA DE PACIENTES Y ASIGNACIÓN ---
+    /** Abre el modal para EDITAR una meta */
+    function openEditGoalModal(goalId, title, description, dueDate, metric, target, status) {
+        currentGoalId = goalId; // Modo Edición
+        
+        document.getElementById('modal-title').textContent = 'Editar Meta';
+        document.getElementById('status-field').style.display = 'block'; // Mostrar estado
+        
+        // Rellenar formulario
+        document.getElementById('goalTitle').value = title;
+        document.getElementById('goalDescription').value = description;
+        document.getElementById('goalDueDate').value = dueDate;
+        document.getElementById('goalMetric').value = metric;
+        document.getElementById('goalTarget').value = target;
+        document.getElementById('goalStatus').value = status;
+        
+        document.getElementById('goal-modal').style.display = 'block';
+        document.getElementById('goal-form-message').style.display = 'none';
+    }
+
+    /** Cierra el modal */
+    function closeModal() {
+        document.getElementById('goal-modal').style.display = 'none';
+        currentGoalId = null; // Limpiar el ID de la meta editada al cerrar
+    }
+
+    // --- LÓGICA DE DATOS Y API ---
 
     async function loadPatients() {
         const list = document.getElementById('patients-list');
         list.innerHTML = 'Cargando...';
-        showPatientListView(); // Asegura que la vista de lista esté visible
+        showPatientListView();
 
         try {
             const response = await fetch(`${API_BASE_URL}/therapist/patients`, {
@@ -231,11 +304,11 @@
                 headers: getAuthHeaders()
             });
 
-            const patients = await response.json();
-            
             if (!response.ok) {
-                throw new Error(patients.message || 'Error al cargar pacientes.');
+                await handleResponseError(response);
             }
+
+            const patients = await response.json();
             
             if (patients.length === 0) {
                 list.innerHTML = '<p>Aún no tienes pacientes asignados.</p>';
@@ -257,61 +330,6 @@
         }
     }
 
-    async function assignPatient(form) {
-        const email = document.getElementById('patientEmail').value;
-        const messageDiv = document.getElementById('assign-message');
-        messageDiv.innerHTML = '';
-        
-        try {
-            const response = await fetch(`${API_BASE_URL}/therapist/assign`, {
-                method: 'PATCH',
-                headers: getAuthHeaders(),
-                body: JSON.stringify({ patientEmail: email })
-            });
-
-            const result = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(result.message || 'Error al asignar paciente.');
-            }
-
-            showAlert('assign-message', result.message, false);
-            form.reset();
-            loadPatients(); 
-
-        } catch (error) {
-            showAlert('assign-message', error.message, true);
-        }
-    }
-
-    // --- LÓGICA DE VISTAS Y MODAL ---
-
-    /** Muestra la lista de pacientes y oculta los detalles. */
-    function showPatientListView() {
-        document.getElementById('patients-list-view').style.display = 'block';
-        document.getElementById('patient-details-view').style.display = 'none';
-        currentPatientId = null; 
-    }
-
-    /** Abre el modal de creación de meta */
-    function openCreateGoalModal(patientId) {
-        if (!patientId) {
-            alert("Error: ID de paciente no definido.");
-            return;
-        }
-        currentPatientId = patientId; // Usamos la variable global
-        document.getElementById('goal-modal').style.display = 'block';
-        document.getElementById('create-goal-form').reset(); 
-        document.getElementById('goal-form-message').style.display = 'none';
-    }
-
-    /** Cierra el modal */
-    function closeModal() {
-        document.getElementById('goal-modal').style.display = 'none';
-        // currentPatientId se mantiene porque el usuario puede querer seguir viendo detalles.
-    }
-
-    /** Obtiene y muestra los detalles completos del paciente (Check-ins y Metas). */
     async function viewPatientDetails(patientId) {
         document.getElementById('patients-list-view').style.display = 'none';
         document.getElementById('patient-details-view').style.display = 'block';
@@ -327,7 +345,7 @@
         
         currentPatientId = patientId; 
         
-        // ⚠️ Conectamos el botón de crear meta a la función del modal
+        // Conectar el botón de crear meta a la función de apertura de modal
         createGoalButton.setAttribute('onclick', `openCreateGoalModal('${patientId}')`);
 
         try {
@@ -336,11 +354,11 @@
                 headers: getAuthHeaders()
             });
 
-            const patient = await response.json();
-
             if (!response.ok) {
-                throw new Error(patient.message || 'Error al obtener detalles del paciente.');
+                await handleResponseError(response);
             }
+
+            const patient = await response.json();
 
             // 1. Mostrar nombre
             nameHeader.textContent = `${patient.firstName} ${patient.lastName || ''} (${patient.email})`;
@@ -369,7 +387,15 @@
                         <p>${g.description || 'Sin descripción.'}</p>
                         <p><small>Límite: ${new Date(g.dueDate).toLocaleDateString()}</small></p>
                         <p><small>Métrica/Objetivo: ${g.metric || 'N/A'} / ${g.target || 'N/A'}</small></p>
-                        <button onclick="alert('Funcionalidad de edición PENDIENTE para la meta ${g.id}')" style="margin-top: 10px; padding: 5px 10px; background-color: var(--secondary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Editar</button>
+                        <button onclick="openEditGoalModal(
+                            '${g.id}', 
+                            '${g.title.replace(/'/g, "\\'")}', 
+                            '${g.description ? g.description.replace(/'/g, "\\'") : ''}', 
+                            '${g.dueDate.substring(0, 10)}', 
+                            '${g.metric || ''}', 
+                            '${g.target || ''}', 
+                            '${g.status}'
+                        )" style="margin-top: 10px; padding: 5px 10px; background-color: var(--secondary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Editar</button>
                     </div>
                 `).join('');
             } else {
@@ -377,19 +403,21 @@
             }
 
         } catch (error) {
-            document.getElementById('patient-details-view').innerHTML = `<p style="color: var(--primary-color);">Error: ${error.message}. Por favor, vuelve a la lista.</p>
+            document.getElementById('patient-details-view').innerHTML = `<p style="color: var(--primary-color);">Error al cargar detalles: ${error.message}</p>
                 <button onclick="showPatientListView()" style="margin-top: 15px; padding: 8px 15px; background-color: var(--secondary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">← Volver a la Lista</button>`;
         }
     }
 
-    /** Maneja el envío del formulario de Creación de Meta */
+    /** * Maneja la creación (POST) o edición (PATCH) de metas.
+     */
     async function handleCreateGoal(event) {
         event.preventDefault();
         
-        if (!currentPatientId) {
-            showAlert('goal-form-message', 'Error interno: ID del paciente no encontrado.', true);
-            return;
-        }
+        const isEditing = currentGoalId !== null;
+        const url = isEditing 
+            ? `${API_BASE_URL}/therapist/goals/${currentGoalId}` 
+            : `${API_BASE_URL}/therapist/goals`;
+        const method = isEditing ? 'PATCH' : 'POST';
 
         const title = document.getElementById('goalTitle').value;
         const description = document.getElementById('goalDescription').value;
@@ -397,42 +425,89 @@
         const metric = document.getElementById('goalMetric').value;
         const target = document.getElementById('goalTarget').value;
         
-        if (!title || !dueDate) {
-            showAlert('goal-form-message', 'El Título y la Fecha Límite son obligatorios.', true);
-            return;
+        // Solo incluir el status si estamos editando
+        const status = isEditing ? document.getElementById('goalStatus').value : 'PENDING';
+
+        const dataToSend = {
+            title: title,
+            description: description,
+            dueDate: dueDate,
+            metric: metric,
+            target: target,
+            status: status 
+        };
+        
+        // En modo creación, necesitamos el patientId
+        if (!isEditing) {
+            if (!currentPatientId) {
+                showAlert('goal-form-message', 'Error: ID de paciente no encontrado.', true);
+                return;
+            }
+            dataToSend.patientId = currentPatientId;
+        }
+        
+        // Limpiar datos vacíos para PATCH para no sobreescribir con valores nulos
+        if (isEditing) {
+            Object.keys(dataToSend).forEach(key => {
+                if (dataToSend[key] === null || dataToSend[key] === '' || dataToSend[key] === undefined) {
+                    delete dataToSend[key];
+                }
+            });
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/therapist/goals`, {
-                method: 'POST',
+            const response = await fetch(url, {
+                method: method,
                 headers: getAuthHeaders(),
-                body: JSON.stringify({
-                    patientId: currentPatientId,
-                    title: title,
-                    description: description,
-                    dueDate: dueDate,
-                    metric: metric,
-                    target: target 
-                })
+                body: JSON.stringify(dataToSend)
             });
 
-            const result = await response.json();
-            
             if (!response.ok) {
-                throw new Error(result.message || 'Error al crear la meta.');
+                await handleResponseError(response);
             }
-
-            showAlert('goal-form-message', 'Meta creada exitosamente!', false);
+            
+            const result = await response.json();
+            showAlert('goal-form-message', isEditing ? 'Meta actualizada exitosamente!' : 'Meta creada exitosamente!', false);
             
             setTimeout(() => {
-                closeModal(); // Cerrar modal al éxito después de un breve tiempo
-                viewPatientDetails(currentPatientId); // Recargar los detalles para mostrar la nueva meta
+                closeModal(); 
+                // Usamos currentPatientId para recargar la vista del paciente actual
+                viewPatientDetails(currentPatientId); 
             }, 1000); 
 
         } catch (error) {
             showAlert('goal-form-message', error.message, true);
         }
     }
+
+    // Incluye la función assignPatient si todavía la necesitas
+    async function assignPatient(form) {
+        const email = document.getElementById('patientEmail').value;
+        const messageDiv = document.getElementById('assign-message');
+        messageDiv.innerHTML = '';
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/therapist/assign`, {
+                method: 'PATCH',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ patientEmail: email })
+            });
+
+            if (!response.ok) {
+                await handleResponseError(response);
+            }
+
+            const result = await response.json();
+            
+            showAlert('assign-message', result.message, false);
+            form.reset();
+            loadPatients();
+
+        } catch (error) {
+            showAlert('assign-message', error.message, true);
+        }
+    }
+
 
     window.onload = checkAuthentication;
 </script>
